@@ -1,11 +1,11 @@
 import 'package:equatable/equatable.dart';
 
-/// Thực thể đại diện cho toàn bộ trang ảnh của một chương truyện từ MangaDex@Home CDN
+/// Thực thể đại diện cho toàn bộ trang ảnh của một chương truyện từ MangaDex@Home CDN hoặc Offline Cache
 class ChapterPages extends Equatable {
   final String chapterId;
   final String baseUrl;
   final String chapterHash;
-  final List<String> pageFilenames; // Danh sách tên file ảnh gốc
+  final List<String> pageFilenames; // Danh sách tên file ảnh gốc (hoặc đường dẫn local file)
   final List<String> dataSaverFilenames; // Danh sách tên file ảnh nén (Data Saver 4G)
 
   const ChapterPages({
@@ -19,7 +19,7 @@ class ChapterPages extends Equatable {
   /// Tổng số trang của chương
   int get totalPages => pageFilenames.length;
 
-  /// Tạo đường dẫn URL ảnh đầy đủ để tải từ CDN
+  /// Tạo đường dẫn URL ảnh đầy đủ để tải từ CDN hoặc trả về đường dẫn file cục bộ
   String getPageUrl(int pageIndex, {bool isDataSaver = false}) {
     final list = (isDataSaver && dataSaverFilenames.isNotEmpty)
         ? dataSaverFilenames
@@ -27,6 +27,11 @@ class ChapterPages extends Equatable {
 
     if (pageIndex < 0 || pageIndex >= list.length) {
       return '';
+    }
+
+    // Nếu đọc offline thì list chứa trực tiếp đường dẫn file cục bộ
+    if (baseUrl.isEmpty) {
+      return list[pageIndex];
     }
 
     final mode = (isDataSaver && dataSaverFilenames.isNotEmpty)

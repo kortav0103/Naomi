@@ -25,10 +25,24 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
   @override
   Future<Either<Failure, ChapterPages>> getChapterPages({required String chapterId}) async {
+    // 1. Kiểm tra trước xem chương này đã tải offline vào thiết bị chưa (FR-06)
+    final offlinePages = await localDataSource.getOfflinePages(chapterId);
+    if (offlinePages != null && offlinePages.isNotEmpty) {
+      return Right(ChapterPages(
+        chapterId: chapterId,
+        baseUrl: '',
+        chapterHash: 'offline',
+        pageFilenames: offlinePages,
+        dataSaverFilenames: offlinePages,
+      ));
+    }
+
+    // 2. Nếu chưa tải ngoại tuyến thì kiểm tra kết nối mạng
     if (!await _isConnected()) {
       return const Left(NetworkFailure('Không có kết nối mạng để tải các trang truyện.'));
     }
 
+    // 3. Tải online từ API MangaDex
     try {
       final pagesModel = await remoteDataSource.getChapterPages(chapterId);
       return Right(pagesModel);

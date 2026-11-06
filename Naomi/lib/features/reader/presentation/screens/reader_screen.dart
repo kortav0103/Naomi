@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -278,6 +279,46 @@ class _ReaderViewState extends State<_ReaderView> {
     );
   }
 
+  /// Trình dựng ảnh hỗ trợ cả URL mạng lẫn file ngoại tuyến tải về thiết bị
+  Widget _buildImagePage(String url, {BoxFit fit = BoxFit.fitWidth}) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: url,
+        fit: fit,
+        placeholder: (context, url) => Container(
+          height: 300,
+          color: AppColors.darkSurface,
+          child: const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          height: 200,
+          color: AppColors.darkSurface,
+          child: const Center(
+            child: Icon(Icons.broken_image_rounded, color: AppColors.darkTextMuted),
+          ),
+        ),
+      );
+    } else {
+      return Image.file(
+        File(url),
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => Container(
+          height: 200,
+          color: AppColors.darkSurface,
+          child: const Center(
+            child: Icon(Icons.broken_image_rounded, color: AppColors.darkTextMuted),
+          ),
+        ),
+      );
+    }
+  }
+
   /// Chế độ cuộn dọc liên tục kiểu Webtoon
   Widget _buildWebtoonViewer(BuildContext context, ReaderLoaded state) {
     return ListView.builder(
@@ -285,28 +326,7 @@ class _ReaderViewState extends State<_ReaderView> {
       itemCount: state.pages.totalPages,
       itemBuilder: (context, index) {
         final url = state.pages.getPageUrl(index, isDataSaver: state.isDataSaver);
-        return CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.fitWidth,
-          placeholder: (context, url) => Container(
-            height: 300,
-            color: AppColors.darkSurface,
-            child: const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-              ),
-            ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            height: 200,
-            color: AppColors.darkSurface,
-            child: const Center(
-              child: Icon(Icons.broken_image_rounded, color: AppColors.darkTextMuted),
-            ),
-          ),
-        );
+        return _buildImagePage(url, fit: BoxFit.fitWidth);
       },
     );
   }
@@ -325,16 +345,7 @@ class _ReaderViewState extends State<_ReaderView> {
           minScale: 1.0,
           maxScale: 3.5,
           child: Center(
-            child: CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.contain,
-              placeholder: (context, url) => const Center(
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-              ),
-              errorWidget: (context, url, error) => const Center(
-                child: Icon(Icons.broken_image_rounded, size: 48, color: AppColors.darkTextMuted),
-              ),
-            ),
+            child: _buildImagePage(url, fit: BoxFit.contain),
           ),
         );
       },

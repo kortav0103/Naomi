@@ -20,6 +20,15 @@ import '../../features/reader/domain/repositories/reader_repository.dart';
 import '../../features/reader/domain/usecases/get_chapter_pages.dart';
 import '../../features/reader/domain/usecases/save_reading_progress.dart';
 import '../../features/reader/presentation/bloc/reader_bloc.dart';
+import '../../features/library/data/datasources/library_local_data_source.dart';
+import '../../features/library/data/repositories/library_repository_impl.dart';
+import '../../features/library/domain/repositories/library_repository.dart';
+import '../../features/library/domain/usecases/check_is_bookmarked.dart';
+import '../../features/library/domain/usecases/download_chapter.dart';
+import '../../features/library/domain/usecases/get_bookmarks.dart';
+import '../../features/library/domain/usecases/get_downloaded_chapters.dart';
+import '../../features/library/domain/usecases/toggle_bookmark.dart';
+import '../../features/library/presentation/bloc/library_bloc.dart';
 
 // Biến toàn cục Service Locator (sl)
 final sl = GetIt.instance;
@@ -95,6 +104,37 @@ Future<void> init() async {
     () => ReaderBloc(
       getChapterPages: sl(),
       saveReadingProgress: sl(),
+      repository: sl(),
+    ),
+  );
+
+  //! 4. Feature: Library Module
+  // Data source
+  sl.registerLazySingleton<LibraryLocalDataSource>(
+    () => LibraryLocalDataSourceImpl(
+      dbHelper: sl(),
+      dio: sl<DioClient>().dio,
+    ),
+  );
+
+  // Repository
+  sl.registerLazySingleton<LibraryRepository>(
+    () => LibraryRepositoryImpl(localDataSource: sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetBookmarks(sl()));
+  sl.registerLazySingleton(() => GetDownloadedChapters(sl()));
+  sl.registerLazySingleton(() => ToggleBookmark(sl()));
+  sl.registerLazySingleton(() => CheckIsBookmarked(sl()));
+  sl.registerLazySingleton(() => DownloadChapter(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => LibraryBloc(
+      getBookmarks: sl(),
+      getDownloadedChapters: sl(),
+      toggleBookmark: sl(),
       repository: sl(),
     ),
   );

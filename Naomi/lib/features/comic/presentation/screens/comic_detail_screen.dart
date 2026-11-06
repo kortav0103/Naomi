@@ -1,9 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:naomi/features/reader/presentation/screens/reader_screen.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../library/domain/repositories/library_repository.dart';
+import '../../../library/domain/usecases/check_is_bookmarked.dart';
+import '../../../library/domain/usecases/download_chapter.dart';
+import '../../../library/domain/usecases/toggle_bookmark.dart';
+import '../../../reader/presentation/screens/reader_screen.dart';
+import '../../domain/entities/chapter.dart';
+import '../../domain/entities/comic.dart';
 import '../bloc/detail/comic_detail_bloc.dart';
 import '../bloc/detail/comic_detail_event.dart';
 import '../bloc/detail/comic_detail_state.dart';
@@ -22,10 +28,119 @@ class ComicDetailScreen extends StatelessWidget {
   }
 }
 
-class _ComicDetailView extends StatelessWidget {
+class _ComicDetailView extends StatefulWidget {
   final String comicId;
 
   const _ComicDetailView({required this.comicId});
+
+  @override
+  State<_ComicDetailView> createState() => _ComicDetailViewState();
+}
+
+class _ComicDetailViewState extends State<_ComicDetailView> {
+  bool _isBookmarked = false;
+  final Set<String> _downloadedChapterIds = {};
+  final Set<String> _downloadingChapterIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialStatus();
+  }
+
+  Future<void> _checkInitialStatus() async {
+    final bookmarkResult = await sl<CheckIsBookmarked>()(widget.comicId);
+    bookmarkResult.fold((_) {}, (isFav) {
+      if (mounted) setState(() => _isBookmarked = isFav);
+    });
+
+    final downloadsResult = await sl<LibraryRepository>().getDownloadedChapters();
+    downloadsResult.fold((_) {}, (downloads) {
+      if (mounted) {
+        setState(() {
+          for (final d in downloads) {
+            _downloadedChapterIds.add(d.chapterId);
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> _toggleBookmark(Comic comic) async {
+    final result = await sl<ToggleBookmark>()(
+      comicId: comic.id,
+      title: comic.title,
+      coverUrl: comic.coverUrl,
+      author: comic.author,
+    );
+
+    result.fold(
+      (failure) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: ${failure.message}'), backgroundColor: AppColors.error),
+          );
+        }
+      },
+      (isFav) {
+        if (mounted) {
+          setState(() => _isBookmarked = isFav);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isFav ? 'Đã thêm vào Tủ sách yêu thích!' : 'Đã xóa khỏi Tủ sách yêu thích.'),
+              backgroundColor: isFav ? AppColors.primary : AppColors.darkSurface,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Future<void> _downloadChapter(Comic comic, Chapter chapter) async {
+    if (_downloadingChapterIds.contains(chapter.id) || _downloadedChapterIds.contains(chapter.id)) return;
+
+    setState(() => _downloadingChapterIds.add(chapter.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Bắt đầu tải Chương ${chapter.chapterNumber} ngoại tuyến...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    final result = await sl<DownloadChapter>()(
+      DownloadChapterParams(
+        comicId: comic.id,
+        comicTitle: comic.title,
+        coverUrl: comic.coverUrl,
+        author: comic.author,
+        chapterId: chapter.id,
+        chapterNumber: chapter.chapterNumber,
+        chapterTitle: chapter.title,
+      ),
+    );
+
+    if (mounted) {
+      setState(() => _downloadingChapterIds.remove(chapter.id));
+      result.fold(
+        (failure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Tải thất bại: ${failure.message}'), backgroundColor: AppColors.error),
+          );
+        },
+        (_) {
+          setState(() => _downloadedChapterIds.add(chapter.id));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã tải xong Chương ${chapter.chapterNumber}! Có thể đọc offline trong Tủ sách.'),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +158,7 @@ class _ComicDetailView extends StatelessWidget {
 
             return CustomScrollView(
               slivers: [
-                // 1. Sliver AppBar với ảnh bìa lớn
+                // 1. Sliver AppBar với ảnh bìa lớn & nút Thả tim
                 SliverAppBar(
                   expandedHeight: 340,
                   pinned: true,
@@ -55,6 +170,21 @@ class _ComicDetailView extends StatelessWidget {
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
+                  actions: [
+                    IconButton(
+                      tooltip: _isBookmarked ? 'Bỏ thích' : 'Yêu thích (Tủ sách)',
+                      icon: CircleAvatar(
+                        backgroundColor: Colors.black54,
+                        child: Icon(
+                          _isBookmarked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: _isBookmarked ? AppColors.error : Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      onPressed: () => _toggleBookmark(comic),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,
@@ -252,42 +382,80 @@ class _ComicDetailView extends StatelessWidget {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final chapter = chapters[index];
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          decoration: BoxDecoration(
+                        final isDownloading = _downloadingChapterIds.contains(chapter.id);
+                        final isDownloaded = _downloadedChapterIds.contains(chapter.id);
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: Material(
                             color: AppColors.darkSurface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.darkBorder),
-                          ),
-                          child: ListTile(
-                            title: Text(
-                              'Chương ${chapter.chapterNumber}${chapter.title.isNotEmpty ? ': ${chapter.title}' : ''}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.darkTextPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: AppColors.darkBorder),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: ListTile(
+                              title: Text(
+                                'Chương ${chapter.chapterNumber}${chapter.title.isNotEmpty ? ': ${chapter.title}' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.darkTextPrimary,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Nhóm dịch: ${chapter.scanlationGroup} • [${chapter.translatedLanguage.toUpperCase()}]',
+                                style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Nút tải ngoại tuyến (FR-06)
+                                  if (isDownloading)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 10),
+                                      child: SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                      ),
+                                    )
+                                  else if (isDownloaded)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 8),
+                                      child: Icon(Icons.offline_pin_rounded, color: AppColors.success, size: 22),
+                                    )
+                                  else
+                                    IconButton(
+                                      tooltip: 'Tải đọc ngoại tuyến (FR-06)',
+                                      icon: const Icon(Icons.download_rounded, color: AppColors.darkTextSecondary, size: 20),
+                                      onPressed: () => _downloadChapter(comic, chapter),
+                                    ),
+
+                                  // Nút Đọc ngay
+                                  IconButton(
+                                    tooltip: 'Đọc ngay',
+                                    icon: const Icon(
+                                      Icons.play_circle_outline_rounded,
+                                      color: AppColors.primary,
+                                      size: 24,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ReaderScreen(
+                                            chapterId: chapter.id,
+                                            chapterNumber: chapter.chapterNumber,
+                                            chapterTitle: chapter.title,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
-                            subtitle: Text(
-                              'Nhóm dịch: ${chapter.scanlationGroup} • [${chapter.translatedLanguage.toUpperCase()}]',
-                              style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
-                            ),
-                            trailing: const Icon(
-                              Icons.play_circle_outline_rounded,
-                              color: AppColors.primary,
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ReaderScreen(
-                                    chapterId: chapter.id,
-                                    chapterNumber: chapter.chapterNumber,
-                                    chapterTitle: chapter.title,
-                                  ),
-                                ),
-                              );
-                            },
                           ),
                         );
                       },
@@ -311,7 +479,7 @@ class _ComicDetailView extends StatelessWidget {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      onPressed: () => context.read<ComicDetailBloc>().add(LoadComicDetailEvent(comicId)),
+                      onPressed: () => context.read<ComicDetailBloc>().add(LoadComicDetailEvent(widget.comicId)),
                       child: const Text('Thử lại', style: TextStyle(color: Colors.white)),
                     ),
                   ],

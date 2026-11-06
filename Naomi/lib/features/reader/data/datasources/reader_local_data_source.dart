@@ -13,6 +13,9 @@ abstract class ReaderLocalDataSource {
 
   /// Đọc vị trí trang đọc dở gần nhất từ SQLite
   Future<int> getSavedProgress(String chapterId);
+
+  /// Lấy danh sách đường dẫn file ảnh offline của chương nếu đã tải về máy
+  Future<List<String>?> getOfflinePages(String chapterId);
 }
 
 class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
@@ -66,6 +69,26 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
       return 1; // Mặc định nếu chưa đọc thì bắt đầu từ trang 1
     } catch (e) {
       throw CacheException('Không thể nạp tiến trình đọc: $e');
+    }
+  }
+
+  @override
+  Future<List<String>?> getOfflinePages(String chapterId) async {
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> results = await db.query(
+        'pages',
+        columns: ['file_path'],
+        where: 'chapter_id = ? AND file_path IS NOT NULL',
+        orderBy: 'page_number ASC',
+      );
+
+      if (results.isNotEmpty) {
+        return results.map((r) => r['file_path'] as String).toList();
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 }
