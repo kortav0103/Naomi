@@ -8,9 +8,13 @@ abstract class DiscoverState extends Equatable {
   List<Object?> get props => [];
 }
 
-class DiscoverInitial extends DiscoverState {}
+class DiscoverInitial extends DiscoverState {
+  const DiscoverInitial();
+}
 
-class DiscoverLoading extends DiscoverState {}
+class DiscoverLoading extends DiscoverState {
+  const DiscoverLoading();
+}
 
 class DiscoverLoaded extends DiscoverState {
   final List<Comic> comics;

@@ -9,9 +9,13 @@ abstract class LibraryState extends Equatable {
   List<Object?> get props => [];
 }
 
-class LibraryInitial extends LibraryState {}
+class LibraryInitial extends LibraryState {
+  const LibraryInitial();
+}
 
-class LibraryLoading extends LibraryState {}
+class LibraryLoading extends LibraryState {
+  const LibraryLoading();
+}
 
 class LibraryLoaded extends LibraryState {
   final List<Bookmark> bookmarks;
