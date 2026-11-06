@@ -1,3 +1,4 @@
+import '../audio/ambient_audio_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -12,6 +13,13 @@ import '../../features/comic/domain/usecases/get_trending_comics.dart';
 import '../../features/comic/domain/usecases/search_comics.dart';
 import '../../features/comic/presentation/bloc/detail/comic_detail_bloc.dart';
 import '../../features/comic/presentation/bloc/discover/discover_bloc.dart';
+import '../../features/reader/data/datasources/reader_local_data_source.dart';
+import '../../features/reader/data/datasources/reader_remote_data_source.dart';
+import '../../features/reader/data/repositories/reader_repository_impl.dart';
+import '../../features/reader/domain/repositories/reader_repository.dart';
+import '../../features/reader/domain/usecases/get_chapter_pages.dart';
+import '../../features/reader/domain/usecases/save_reading_progress.dart';
+import '../../features/reader/presentation/bloc/reader_bloc.dart';
 
 // Biến toàn cục Service Locator (sl)
 final sl = GetIt.instance;
@@ -23,6 +31,7 @@ Future<void> init() async {
   sl.registerLazySingleton<DatabaseHelper>(() => DatabaseHelper.instance);
   sl.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
   sl.registerLazySingleton<Connectivity>(() => Connectivity());
+  sl.registerLazySingleton<AmbientAudioService>(() => AmbientAudioService());
 
   //! 2. Feature: Comic / Discover Module
   // Data sources
@@ -56,6 +65,37 @@ Future<void> init() async {
     () => ComicDetailBloc(
       getComicDetail: sl(),
       getComicChapters: sl(),
+    ),
+  );
+
+  //! 3. Feature: Reader Module
+  // Data sources
+  sl.registerLazySingleton<ReaderRemoteDataSource>(
+    () => ReaderRemoteDataSourceImpl(client: sl()),
+  );
+  sl.registerLazySingleton<ReaderLocalDataSource>(
+    () => ReaderLocalDataSourceImpl(dbHelper: sl()),
+  );
+
+  // Repositories
+  sl.registerLazySingleton<ReaderRepository>(
+    () => ReaderRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      connectivity: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetChapterPages(sl()));
+  sl.registerLazySingleton(() => SaveReadingProgress(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => ReaderBloc(
+      getChapterPages: sl(),
+      saveReadingProgress: sl(),
+      repository: sl(),
     ),
   );
 }

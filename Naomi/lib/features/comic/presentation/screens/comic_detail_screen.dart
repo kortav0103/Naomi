@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:naomi/features/reader/presentation/screens/reader_screen.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/detail/comic_detail_bloc.dart';
@@ -276,12 +277,13 @@ class _ComicDetailView extends StatelessWidget {
                               color: AppColors.primary,
                             ),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: AppColors.darkSurface,
-                                  content: Text(
-                                    'Đã chọn Chương ${chapter.chapterNumber} (Trình đọc toàn màn hình sẽ kích hoạt ở Sprint 3)',
-                                    style: const TextStyle(color: AppColors.darkTextPrimary),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ReaderScreen(
+                                    chapterId: chapter.id,
+                                    chapterNumber: chapter.chapterNumber,
+                                    chapterTitle: chapter.title,
                                   ),
                                 ),
                               );
