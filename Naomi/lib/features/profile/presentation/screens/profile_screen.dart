@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
 
 /// Màn hình Hồ sơ & Cài đặt hệ thống (S08) theo đặc tả Mục 1.6
 class ProfileScreen extends StatefulWidget {
@@ -219,9 +220,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
+          const SizedBox(height: 24),
+
+          // 4. Nút Đăng xuất tài khoản
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text('Đăng xuất tài khoản', style: TextStyle(fontWeight: FontWeight.w700)),
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+            ),
+          ),
+
           const SizedBox(height: 32),
 
-          // 4. Thông tin đồ án & Phiên bản
+          // 5. Thông tin đồ án & Phiên bản
           const Center(
             child: Column(
               children: [

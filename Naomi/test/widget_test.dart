@@ -8,11 +8,12 @@ void main() {
     await di.init();
   });
 
-  testWidgets('Naomi DiscoverScreen smoke test', (WidgetTester tester) async {
+  testWidgets('Naomi App Smoke Test - Displays Auth Screen', (WidgetTester tester) async {
     await tester.pumpWidget(const NaomiApp());
     await tester.pump();
 
-    // Xác nhận tiêu đề màn hình khám phá xuất hiện
-    expect(find.text('KHÁM PHÁ TRUYỆN'), findsOneWidget);
+    // Xác nhận màn hình xác thực thương hiệu NAOMI xuất hiện
+    expect(find.text('NAOMI'), findsOneWidget);
+    expect(find.text('ĐĂNG NHẬP'), findsOneWidget);
   });
 }

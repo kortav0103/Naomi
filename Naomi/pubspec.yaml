@@ -57,6 +57,7 @@ dependencies:
   # Ambient Audio (Nhạc nền không lời theo thể loại - FR-05 & NFR-17)
   just_audio: ^0.9.46
   audio_session: ^0.1.25
+  sqflite_common_ffi: ^2.4.5
 
 dev_dependencies:
   flutter_test:
