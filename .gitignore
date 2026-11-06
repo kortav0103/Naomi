@@ -1,0 +1,93 @@
+# --------------------------------------------------
+# Reference folders & AI agent files
+# --------------------------------------------------
+tham khảo kiến thức csdl/
+tham khảo kiến thức công nghệ phần mềm/
+tham khảo kiến thức dev mobile app/
+tham khảo kiến thức*/
+AI_Agent.md
+AI agent.md
+command_to_AI.txt
+command to ai*
+
+# --------------------------------------------------
+# Flutter & Dart artifacts
+# --------------------------------------------------
+**/.dart_tool/
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+
+# Flutter mirrors & generated files
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.flutter-plugin-dependencies
+**/.flutter-plugins-dependencies-windows
+**/.flutter-plugins-dependencies-android
+
+# --------------------------------------------------
+# Android specific
+# --------------------------------------------------
+**/android/.gradle/
+**/android/app/build/
+**/android/captures/
+**/android/gradle/
+**/android/local.properties
+**/android/GeneratedPluginRegistrant.java
+
+# Android Keystores & Signing credentials
+*.jks
+*.keystore
+key.properties
+
+# --------------------------------------------------
+# Windows / Desktop specific
+# --------------------------------------------------
+**/windows/flutter/ephemeral/
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+*.vcxproj.user
+
+# --------------------------------------------------
+# IDEs & Editors
+# --------------------------------------------------
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.vscode/*.log
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# --------------------------------------------------
+# Secrets & Environment variables
+# --------------------------------------------------
+.env*
+!.env.example
+secrets.json
+
+# --------------------------------------------------
+# Local storage & downloaded manga assets
+# --------------------------------------------------
+assets/downloads/
+*.db
+*.sqlite
+*.sqlite3
+
+# --------------------------------------------------
+# OS-generated files
+# --------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+.DS_Store

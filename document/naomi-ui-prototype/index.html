@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Naomi — Minimalist Content-First UI Design (12 Frames • 390x844)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Studio Bar -->
+  <header class="studio-bar">
+    <div class="studio-brand">
+      <span class="studio-logo">NAOMI</span>
+      <span class="studio-tag">1.6 UI/UX Specification • Content-First Minimal</span>
+    </div>
+
+    <div class="studio-tabs" role="tablist">
+      <button class="st-tab active" data-tab="canvas" onclick="switchMode('canvas')">All 12 Frames (390×844)</button>
+      <button class="st-tab" data-tab="prototype" onclick="switchMode('prototype')">Interactive Prototype</button>
+      <button class="st-tab" data-tab="tokens" onclick="switchMode('tokens')">Minimal Design Tokens</button>
+    </div>
+
+    <div class="studio-actions">
+      <button class="btn-export-svg" onclick="copyAllFramesSvg()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="copySvgLabel">Copy Editable SVG for Figma</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- =================================================================== -->
+  <!-- MODE 1: ALL 12 FRAMES CANVAS (S01 -> S11 at 390x844 proportion)     -->
+  <!-- =================================================================== -->
+  <main id="mode-canvas" class="studio-view active">
+    <div class="canvas-grid">
+
+      <!-- ==================== FRAME 1: S01 — SIGN IN ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S01 — Sign In</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S01')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S01">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/><path d="M20 3.5v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content s01-signin">
+            <div class="s01-brand">NAOMI</div>
+
+            <div class="s01-form">
+              <div class="field-group">
+                <label>Email</label>
+                <div class="input-12">name@example.com</div>
+              </div>
+
+              <div class="field-group">
+                <label>Password</label>
+                <div class="input-12 row-between">
+                  <span>••••••••</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#757588" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+              </div>
+
+              <button class="btn-primary-12" onclick="openProtoAt('S02')">Sign In</button>
+
+              <div class="s01-links">
+                <span class="link-accent">Sign Up</span>
+                <span class="link-muted">Forgot Password?</span>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 2: S02 — HOME ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S02 — Home</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S02')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S02">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content with-nav">
+            <!-- Block 1: Hero Continue Reading -->
+            <div class="hero-continue-card" onclick="openProtoAt('S10')">
+              <img src="assets/frieren.jpg" alt="Sousou no Frieren" class="hero-cover-72" />
+              <div class="hero-meta">
+                <div class="hero-title">Frieren: Beyond Journey's End</div>
+                <div class="hero-progress-text">Ch. 24 · Page 18/42 (43%)</div>
+                <div class="mini-bar"><div class="mini-bar-fill" style="width:43%"></div></div>
+                <button class="btn-continue-pill">
+                  <span>Continue</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Block 2: Recent (Horizontal Scroll) -->
+            <div class="section-block">
+              <div class="section-title-row">
+                <h3>Recent</h3>
+              </div>
+              <div class="h-scroll-row">
+                <div class="manga-card" onclick="openProtoAt('S04')">
+                  <img src="assets/dungeon.jpg" alt="Dungeon Meshi" />
+                  <div class="mc-title">Delicious in Dungeon</div>
+                </div>
+                <div class="manga-card" onclick="openProtoAt('S04')">
+                  <img src="assets/ykk.jpg" alt="Yokohama Kaidashi Kikou" />
+                  <div class="mc-title">Yokohama Kaidashi Kikou</div>
+                </div>
+                <div class="manga-card" onclick="openProtoAt('S04')">
+                  <img src="assets/witch.jpg" alt="Witch Hat Atelier" />
+                  <div class="mc-title">Witch Hat Atelier</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Block 3: Recommended (Horizontal Scroll) -->
+            <div class="section-block">
+              <div class="section-title-row">
+                <h3>Recommended</h3>
+              </div>
+              <div class="h-scroll-row">
+                <div class="manga-card" onclick="openProtoAt('S04')">
+                  <img src="assets/apothecary.jpg" alt="The Apothecary Diaries" />
+                  <div class="mc-title">The Apothecary Diaries</div>
+                </div>
+                <div class="manga-card" onclick="openProtoAt('S04')">
+                  <img src="assets/mushishi.jpg" alt="Mushishi" />
+                  <div class="mc-title">Mushishi</div>
+                </div>
+                <div class="manga-card" onclick="openProtoAt('S04')">
+                  <img src="assets/frieren.jpg" alt="Frieren" />
+                  <div class="mc-title">Frieren: Beyond Journey's End</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <nav class="tab-bar">
+            <div class="tab-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>Home</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S03')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Discover</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S07')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              <span>Library</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S08')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>
+              <span>Profile</span>
+            </div>
+          </nav>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 3: S03 — DISCOVER ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S03 — Discover</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S03')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S03">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content with-nav">
+            <!-- Search Bar + Camera AI -->
+            <div class="search-box-12">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#757588" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span class="search-placeholder">Search titles, authors...</span>
+              <button class="camera-icon-btn" title="AI Visual Search (System Photo Picker)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7066A6" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              </button>
+            </div>
+
+            <!-- Row 1: Trending -->
+            <div class="section-block">
+              <div class="section-title-row" onclick="openProtoAt('S03b')">
+                <h3>Trending</h3>
+                <button class="chevron-btn">›</button>
+              </div>
+              <div class="h-scroll-row">
+                <div class="manga-card">
+                  <img src="assets/frieren.jpg" alt="Frieren" />
+                  <div class="mc-title">Frieren: Beyond Journey's End</div>
+                </div>
+                <div class="manga-card">
+                  <img src="assets/dungeon.jpg" alt="Dungeon Meshi" />
+                  <div class="mc-title">Delicious in Dungeon</div>
+                </div>
+                <div class="manga-card">
+                  <img src="assets/apothecary.jpg" alt="Apothecary" />
+                  <div class="mc-title">The Apothecary Diaries</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Fantasy -->
+            <div class="section-block">
+              <div class="section-title-row" onclick="openProtoAt('S03b')">
+                <h3>Fantasy</h3>
+                <button class="chevron-btn">›</button>
+              </div>
+              <div class="h-scroll-row">
+                <div class="manga-card">
+                  <img src="assets/witch.jpg" alt="Witch Hat Atelier" />
+                  <div class="mc-title">Witch Hat Atelier</div>
+                </div>
+                <div class="manga-card">
+                  <img src="assets/mushishi.jpg" alt="Mushishi" />
+                  <div class="mc-title">Mushishi</div>
+                </div>
+                <div class="manga-card">
+                  <img src="assets/frieren.jpg" alt="Frieren" />
+                  <div class="mc-title">Frieren: Beyond Journey's End</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: Action -->
+            <div class="section-block">
+              <div class="section-title-row" onclick="openProtoAt('S03b')">
+                <h3>Action</h3>
+                <button class="chevron-btn">›</button>
+              </div>
+              <div class="h-scroll-row">
+                <div class="manga-card">
+                  <img src="assets/dungeon.jpg" alt="Dungeon Meshi" />
+                  <div class="mc-title">Delicious in Dungeon</div>
+                </div>
+                <div class="manga-card">
+                  <img src="assets/ykk.jpg" alt="YKK" />
+                  <div class="mc-title">Yokohama Kaidashi Kikou</div>
+                </div>
+                <div class="manga-card">
+                  <img src="assets/witch.jpg" alt="Witch Hat" />
+                  <div class="mc-title">Witch Hat Atelier</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <nav class="tab-bar">
+            <div class="tab-item" onclick="openProtoAt('S02')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>Home</span>
+            </div>
+            <div class="tab-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Discover</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S07')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              <span>Library</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S08')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>
+              <span>Profile</span>
+            </div>
+          </nav>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 4: S03b — EXPANDED LIST ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S03b — Expanded List</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S03b')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S03b">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content">
+            <div class="sub-header">
+              <button class="back-btn" onclick="openProtoAt('S03')">←</button>
+              <h2>Trending</h2>
+            </div>
+
+            <div class="grid-2-col">
+              <div class="grid-manga-card" onclick="openProtoAt('S04')">
+                <img src="assets/frieren.jpg" alt="Frieren" />
+                <div class="gmc-title">Frieren: Beyond Journey's End</div>
+                <div class="gmc-sub">Kanehito Yamada</div>
+              </div>
+              <div class="grid-manga-card" onclick="openProtoAt('S04')">
+                <img src="assets/dungeon.jpg" alt="Dungeon Meshi" />
+                <div class="gmc-title">Delicious in Dungeon</div>
+                <div class="gmc-sub">Ryoko Kui</div>
+              </div>
+              <div class="grid-manga-card" onclick="openProtoAt('S04')">
+                <img src="assets/witch.jpg" alt="Witch Hat Atelier" />
+                <div class="gmc-title">Witch Hat Atelier</div>
+                <div class="gmc-sub">Kamome Shirahama</div>
+              </div>
+              <div class="grid-manga-card" onclick="openProtoAt('S04')">
+                <img src="assets/apothecary.jpg" alt="Apothecary Diaries" />
+                <div class="gmc-title">The Apothecary Diaries</div>
+                <div class="gmc-sub">Natsu Hyuuga</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 5: S04 — MANGA DETAIL ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S04 — Manga Detail</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S04')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S04">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content">
+            <div class="sub-header">
+              <button class="back-btn" onclick="openProtoAt('S02')">←</button>
+              <h2>Details</h2>
+            </div>
+
+            <!-- Manga Properties -->
+            <div class="detail-top">
+              <img src="assets/frieren.jpg" alt="Frieren Cover" class="detail-cover-lg" />
+              <div class="detail-info">
+                <h1>Frieren: Beyond Journey's End</h1>
+                <div class="detail-author">Kanehito Yamada · Tsukasa Abe</div>
+                <div class="detail-meta-line">
+                  <span class="star-rating">★ 4.9</span>
+                  <span class="dot-sep">·</span>
+                  <span>Fantasy, Adventure</span>
+                </div>
+                <p class="detail-synopsis">
+                  After a ten-year quest to defeat the Demon King, elven mage Frieren embarks on a new journey to understand humanity.
+                </p>
+              </div>
+            </div>
+
+            <!-- 4 Action Buttons -->
+            <div class="action-4-grid">
+              <button class="btn-act primary" onclick="openProtoAt('S10')">Read First</button>
+              <button class="btn-act primary" onclick="openProtoAt('S10')">Read Latest</button>
+              <button class="btn-act subtle fav-red">♥ Favorite</button>
+              <button class="btn-act subtle" onclick="openProtoAt('S11')">⬇ Download</button>
+            </div>
+
+            <!-- Chapter List -->
+            <div class="chapter-section">
+              <h3>Chapters</h3>
+              <div class="chap-rows">
+                <div class="chap-row" onclick="openProtoAt('S10')">
+                  <div>
+                    <div class="cr-title">Ch. 24 — The Journey Back</div>
+                    <div class="cr-sub">42 pages · Page 18 read</div>
+                  </div>
+                  <span class="cr-saved">Saved</span>
+                </div>
+                <div class="chap-row" onclick="openProtoAt('S10')">
+                  <div>
+                    <div class="cr-title">Ch. 23 — Before Winter</div>
+                    <div class="cr-sub">38 pages</div>
+                  </div>
+                  <span class="cr-saved">Saved</span>
+                </div>
+                <div class="chap-row" onclick="openProtoAt('S10')">
+                  <div>
+                    <div class="cr-title">Ch. 22 — A Mage's Duty</div>
+                    <div class="cr-sub">40 pages</div>
+                  </div>
+                  <span class="cr-dl-icon">⬇</span>
+                </div>
+                <div class="chap-row" onclick="openProtoAt('S10')">
+                  <div>
+                    <div class="cr-title">Ch. 21 — Departure</div>
+                    <div class="cr-sub">44 pages</div>
+                  </div>
+                  <span class="cr-dl-icon">⬇</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 6: S10 — FULL CHAPTER PRELOAD ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S10 — Full Chapter Preload</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S10')">Interact ↗</button>
+        </div>
+        <div class="device-390 dark-device" id="frame-S10">
+          <div class="ios-status dark-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content s10-preload" onclick="openProtoAt('S05')">
+            <div class="preload-center">
+              <img src="assets/frieren.jpg" alt="Frieren" class="preload-cover-pulse" />
+              <div class="preload-title">Loading full chapter...</div>
+              <div class="preload-bar-track">
+                <div class="preload-bar-fill" style="width: 100%"></div>
+              </div>
+              <div class="preload-count">42 / 42 pages ready (100%)</div>
+              <div class="preload-note">Pre-buffering all pages for instant scrolling without delay.</div>
+            </div>
+          </div>
+          <div class="home-indicator dark-ind"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 7: S05 — FULL SCREEN READER ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S05 — Full Screen Reader</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S05')">Interact ↗</button>
+        </div>
+        <div class="device-390 dark-device" id="frame-S05">
+          <!-- 100% Full-Screen Real Manga Artwork -->
+          <div class="reader-full-artwork">
+            <img src="assets/reader-page.jpg" alt="Real Manga Page" class="manga-page-img" />
+          </div>
+
+          <!-- Single Top Toolbar (Icon-Only on Right) -->
+          <div class="reader-top-bar">
+            <button class="rt-icon-btn" onclick="openProtoAt('S04')" title="Back">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+
+            <div class="rt-chap-switcher">
+              <button class="rt-nav-arrow">‹</button>
+              <span class="rt-chap-label">Ch. 24 ▾</span>
+              <button class="rt-nav-arrow">›</button>
+            </div>
+
+            <div class="rt-icon-strip">
+              <button class="rt-icon-btn" onclick="openProtoAt('S06')" title="Music">🎵</button>
+              <button class="rt-icon-btn" title="Focus Mode">🎯</button>
+              <button class="rt-icon-btn" title="Language">🌐</button>
+              <button class="rt-icon-btn" title="AI Translate">✨</button>
+              <button class="rt-icon-btn" title="Reader Mode Toggle">🔄</button>
+            </div>
+          </div>
+
+          <div class="home-indicator dark-ind"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 8: S06 — AUDIO SHEET ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S06 — Audio Sheet</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S06')">Interact ↗</button>
+        </div>
+        <div class="device-390 dark-device" id="frame-S06">
+          <div class="reader-full-artwork dimmed">
+            <img src="assets/reader-page.jpg" alt="Real Manga Page" class="manga-page-img" />
+          </div>
+
+          <div class="reader-top-bar">
+            <button class="rt-icon-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="rt-chap-switcher">
+              <button class="rt-nav-arrow">‹</button>
+              <span class="rt-chap-label">Ch. 24 ▾</span>
+              <button class="rt-nav-arrow">›</button>
+            </div>
+            <div class="rt-icon-strip">
+              <button class="rt-icon-btn active-tint">🎵</button>
+              <button class="rt-icon-btn">🎯</button>
+              <button class="rt-icon-btn">🌐</button>
+              <button class="rt-icon-btn">✨</button>
+              <button class="rt-icon-btn">🔄</button>
+            </div>
+          </div>
+
+          <!-- Minimal Audio Sheet -->
+          <div class="audio-bottom-sheet">
+            <div class="sheet-handle"></div>
+            <div class="audio-now-row">
+              <div class="audio-now-title">Winds of Aureole (Instrumental)</div>
+              <button class="audio-play-44">❚❚</button>
+            </div>
+
+            <div class="audio-vol-row">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9E9EB0" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+              <div class="thin-slider">
+                <div class="thin-slider-fill" style="width: 35%"></div>
+                <div class="thin-slider-knob" style="left: 35%"></div>
+              </div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9E9EB0" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </div>
+
+            <div class="track-list-3">
+              <div class="track-row active">
+                <span>1. Winds of Aureole (Instrumental)</span>
+                <span>3:12</span>
+              </div>
+              <div class="track-row">
+                <span>2. Quiet Campfire Piano</span>
+                <span>2:45</span>
+              </div>
+              <div class="track-row">
+                <span>3. Distant Elven Forest</span>
+                <span>4:05</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-indicator dark-ind"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 9: S07 — LIBRARY ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S07 — Library (2 Big Buttons)</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S07')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S07">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content with-nav">
+            <h1 class="page-h1">Library</h1>
+
+            <div class="library-two-buttons">
+              <!-- BIG BUTTON 1: Favorites -->
+              <button class="lib-big-btn" onclick="openProtoAt('S04')">
+                <div class="lib-icon-circle fav-bg">❤️</div>
+                <div class="lib-btn-text">
+                  <h2>Favorites</h2>
+                  <p>12 stories marked</p>
+                </div>
+                <span class="lib-arrow">›</span>
+              </button>
+
+              <!-- BIG BUTTON 2: Offline Reading -->
+              <button class="lib-big-btn" onclick="openProtoAt('S04')">
+                <div class="lib-icon-circle off-bg">⬇</div>
+                <div class="lib-btn-text">
+                  <h2>Offline Reading</h2>
+                  <p>8 chapters saved · 280 MB</p>
+                </div>
+                <span class="lib-arrow">›</span>
+              </button>
+            </div>
+          </div>
+
+          <nav class="tab-bar">
+            <div class="tab-item" onclick="openProtoAt('S02')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>Home</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S03')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Discover</span>
+            </div>
+            <div class="tab-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              <span>Library</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S08')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>
+              <span>Profile</span>
+            </div>
+          </nav>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 10: S08 — PROFILE & SETTINGS ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S08 — Profile & Settings</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S08')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S08">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content with-nav">
+            <h1 class="page-h1">Profile</h1>
+
+            <div class="profile-card">
+              <div class="profile-avatar">KN</div>
+              <div>
+                <div class="profile-name">Kiet Nguyen</div>
+                <div class="profile-email">reader.kiet@gmail.com</div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="setting-row">
+                <span>Appearance</span>
+                <span class="setting-val">System / Light / Dark</span>
+              </div>
+              <div class="setting-row">
+                <span>Language</span>
+                <span class="setting-val">English</span>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <div>Storage & Cache</div>
+                  <small class="muted-small">142 MB cached</small>
+                </div>
+                <button class="btn-clear-cache">Clear Cache</button>
+              </div>
+              <div class="setting-row">
+                <span>Notifications</span>
+                <div class="toggle-switch on"><div class="toggle-knob"></div></div>
+              </div>
+            </div>
+
+            <button class="btn-signout" onclick="openProtoAt('S01')">Sign Out</button>
+          </div>
+
+          <nav class="tab-bar">
+            <div class="tab-item" onclick="openProtoAt('S02')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>Home</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S03')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <span>Discover</span>
+            </div>
+            <div class="tab-item" onclick="openProtoAt('S07')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              <span>Library</span>
+            </div>
+            <div class="tab-item active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg>
+              <span>Profile</span>
+            </div>
+          </nav>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 11: S09 — OFFLINE NETWORK ERROR ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S09 — Offline Error State</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S09')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S09">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <span>✈️</span>
+            </div>
+          </div>
+
+          <div class="screen-content s09-offline">
+            <div class="offline-center">
+              <div class="cloud-off-icon">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l20 20"/><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193"/><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7 7 0 0 0 4.02 8.21"/></svg>
+              </div>
+              <h2>Oops! No internet connection</h2>
+              <p>This chapter is not downloaded yet. You can still enjoy your saved stories.</p>
+              <button class="btn-primary-12" onclick="openProtoAt('S07')">Go to Offline Library</button>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+      <!-- ==================== FRAME 12: S11 — DOWNLOAD IN PROGRESS ==================== -->
+      <article class="frame-wrapper">
+        <div class="frame-caption">
+          <span>S11 — Download in Progress</span>
+          <button class="mini-svg-btn" onclick="openProtoAt('S11')">Interact ↗</button>
+        </div>
+        <div class="device-390" id="frame-S11">
+          <div class="ios-status">
+            <span>9:41</span>
+            <div class="ios-icons">
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><rect x="0" y="6" width="2.5" height="5" rx="1"/><rect x="4" y="4" width="2.5" height="7" rx="1"/><rect x="8" y="2" width="2.5" height="9" rx="1"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+              <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="screen-content">
+            <div class="sub-header">
+              <button class="back-btn" onclick="openProtoAt('S02')">←</button>
+              <h2>Details</h2>
+            </div>
+
+            <div class="detail-top compact">
+              <img src="assets/frieren.jpg" alt="Frieren Cover" class="detail-cover-sm" />
+              <div class="detail-info">
+                <h1>Frieren: Beyond Journey's End</h1>
+                <div class="detail-author">Kanehito Yamada · Tsukasa Abe</div>
+                <div class="detail-meta-line">
+                  <span class="star-rating">★ 4.9</span>
+                  <span class="dot-sep">·</span>
+                  <span>Fantasy, Adventure</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="chapter-section">
+              <h3>Chapters</h3>
+              <div class="chap-rows">
+                <!-- Active Downloading Row -->
+                <div class="chap-row downloading-row">
+                  <div class="dl-col">
+                    <div class="cr-title">Ch. 24 — The Journey Back</div>
+                    <div class="dl-status-line">Downloading... 24.5 MB / 36 MB</div>
+                    <div class="dl-bar-wrap"><div class="dl-bar-green" style="width: 68%"></div></div>
+                  </div>
+                  <span class="dl-pct-green">68%</span>
+                </div>
+
+                <div class="chap-row">
+                  <div>
+                    <div class="cr-title">Ch. 23 — Before Winter</div>
+                    <div class="cr-sub">38 pages</div>
+                  </div>
+                  <span class="cr-saved">Saved</span>
+                </div>
+
+                <div class="chap-row">
+                  <div>
+                    <div class="cr-title">Ch. 22 — A Mage's Duty</div>
+                    <div class="cr-sub">40 pages</div>
+                  </div>
+                  <span class="cr-dl-icon">⬇</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Toast Banner at bottom -->
+            <div class="toast-dark">
+              Downloading Chapter 24 for offline reading...
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </article>
+
+    </div>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- MODE 2: INTERACTIVE PROTOTYPE STAGE                                 -->
+  <!-- =================================================================== -->
+  <section id="mode-prototype" class="studio-view">
+    <div class="proto-workspace">
+      <aside class="proto-nav-panel">
+        <div class="pn-title">Interactive Flow Switcher (12 Frames)</div>
+        <p class="pn-desc">Click any screen below or tap directly inside the 390×844 mobile frame:</p>
+        <div class="pn-grid" id="protoNavButtons">
+          <button class="pn-btn active" data-target="S01" onclick="renderProto('S01')">S01 · Sign In</button>
+          <button class="pn-btn" data-target="S02" onclick="renderProto('S02')">S02 · Home</button>
+          <button class="pn-btn" data-target="S03" onclick="renderProto('S03')">S03 · Discover</button>
+          <button class="pn-btn" data-target="S03b" onclick="renderProto('S03b')">S03b · Expanded List</button>
+          <button class="pn-btn" data-target="S04" onclick="renderProto('S04')">S04 · Manga Detail</button>
+          <button class="pn-btn" data-target="S10" onclick="renderProto('S10')">S10 · Full Chapter Preload</button>
+          <button class="pn-btn" data-target="S05" onclick="renderProto('S05')">S05 · Full Screen Reader</button>
+          <button class="pn-btn" data-target="S06" onclick="renderProto('S06')">S06 · Audio Sheet</button>
+          <button class="pn-btn" data-target="S07" onclick="renderProto('S07')">S07 · Library (2 Big Buttons)</button>
+          <button class="pn-btn" data-target="S08" onclick="renderProto('S08')">S08 · Profile & Settings</button>
+          <button class="pn-btn" data-target="S09" onclick="renderProto('S09')">S09 · Offline Error State</button>
+          <button class="pn-btn" data-target="S11" onclick="renderProto('S11')">S11 · Download Progress</button>
+        </div>
+      </aside>
+
+      <div class="proto-stage-wrap">
+        <div id="protoStageMount"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- MODE 3: MINIMAL DESIGN TOKENS (SECTION 2 OF 1.6.MD)                 -->
+  <!-- =================================================================== -->
+  <section id="mode-tokens" class="studio-view">
+    <div class="tokens-sheet">
+      <h2>2. Minimal Design Tokens (Muted Soft Palette — Section 1.6)</h2>
+      <p>Strictly muted colors with a single soft smoky-lavender accent (<code>#7066A6</code>) to let real manga artwork take 100% focus.</p>
+
+      <div class="token-swatches">
+        <div class="t-card"><div class="t-color" style="background:#F8F8FC;border:1px solid #E2E2EC"></div><strong>#F8F8FC</strong><span>bg/canvas</span></div>
+        <div class="t-card"><div class="t-color" style="background:#FFFFFF;border:1px solid #E2E2EC"></div><strong>#FFFFFF</strong><span>bg/surface</span></div>
+        <div class="t-card"><div class="t-color" style="background:#EFEFF4"></div><strong>#EFEFF4</strong><span>bg/subtle</span></div>
+        <div class="t-card"><div class="t-color" style="background:#1C1C26"></div><strong>#1C1C26</strong><span>text/primary</span></div>
+        <div class="t-card"><div class="t-color" style="background:#757588"></div><strong>#757588</strong><span>text/secondary</span></div>
+        <div class="t-card"><div class="t-color" style="background:#7066A6"></div><strong>#7066A6</strong><span>brand/accent</span></div>
+        <div class="t-card"><div class="t-color" style="background:#F0EFF8"></div><strong>#F0EFF8</strong><span>brand/tint</span></div>
+        <div class="t-card"><div class="t-color" style="background:#111116"></div><strong>#111116</strong><span>reader/bg</span></div>
+        <div class="t-card"><div class="t-color" style="background:#E05353"></div><strong>#E05353</strong><span>semantic/favorite</span></div>
+        <div class="t-card"><div class="t-color" style="background:#34A853"></div><strong>#34A853</strong><span>semantic/success</span></div>
+        <div class="t-card"><div class="t-color" style="background:#D97706"></div><strong>#D97706</strong><span>semantic/offline</span></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

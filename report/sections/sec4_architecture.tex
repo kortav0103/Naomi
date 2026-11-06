@@ -1,0 +1,234 @@
+\section{System Architecture Design}
+\label{sec:architecture}
+
+\subsection{High-Level Distributed Multi-Tier Architecture}
+\label{subsec:high_level_arch}
+
+The \textbf{Naomi} platform is engineered as a \textbf{Distributed 4-Tier Hybrid Offline-First Architecture} (Figure~\ref{fig:c4_architecture}), decoupling the mobile presentation client from cloud identity/synchronisation services, open global comic content delivery, and on-device relational/cryptographic persistence:
+
+\begin{enumerate}
+    \item \textbf{Client Tier (Naomi Flutter Mobile Application):} A single cross-platform Dart/Flutter codebase compiled ahead-of-time (AOT) to native ARM64 machine code via the \textbf{Impeller / Skia} rendering engine, structured internally into Presentation, Domain, and Data layers.
+    \item \textbf{App Backend Tier (Supabase BaaS Cloud):} Provides enterprise JWT authentication (\texttt{Supabase Auth}), a cloud \texttt{PostgreSQL} relational database protected by Row-Level Security (\textbf{RLS}) for user profiles, bookmarks, reading history, and genre-audio mappings, and \texttt{Supabase Storage} buckets serving streaming MP3 instrumental tracks.
+    \item \textbf{External Content Tier (MangaDex Ecosystem):} Supplies global comic and chapter metadata via \textbf{MangaDex REST API v5} ($5\text{ req/s}$ rate-limited) and delivers high-resolution or \texttt{dataSaver} WebP/JPG page assets through the distributed \textbf{MangaDex@Home CDN} network.
+    \item \textbf{Local Persistence Tier (On-Device Storage):} Guarantees $100\%$ offline availability via type-safe \textbf{Drift / SQLite} relational tables, hardware-backed \textbf{FlutterSecureStorage} (Android Keystore / iOS Keychain AES-256), sandboxed offline chapter files (\texttt{ApplicationDocuments\-Directory}), and a bounded $500\text{ MB}$ LRU disk cache.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=0.8cm and 1.0cm,
+    tierbox/.style={draw=hcmutblue!70, rounded corners=5pt, line width=0.9pt, fill=naomicanvas, inner sep=8pt},
+    comp/.style={draw=naomiaccent!80!black, rounded corners=3pt, fill=white, line width=0.6pt, minimum height=0.85cm, text width=3.9cm, align=center, font=\scriptsize\sffamily},
+    extcomp/.style={draw=shouldblue!80!black, rounded corners=3pt, fill=white, line width=0.6pt, minimum height=0.95cm, text width=6.4cm, align=center, font=\scriptsize\sffamily},
+    arr/.style={-{Stealth[length=2.2mm,width=1.6mm]}, line width=0.7pt, draw=naomidark},
+    lbl/.style={font=\tiny\sffamily\bfseries, fill=white, inner sep=1.5pt}
+]
+    % Client Tier
+    \node[comp, fill=naomitint] (ui) {\textbf{Presentation Layer (UI)}\\Screens (\texttt{S01}--\texttt{S11}), Widgets, \texttt{BLoC / Cubit}};
+    \node[comp, fill=naomitint, right=0.6cm of ui] (domain) {\textbf{Domain Layer (Core)}\\Entities, Use Cases, Abstract Repo Contracts};
+    \node[comp, fill=naomitint, right=0.6cm of domain] (data) {\textbf{Data Layer (Infra)}\\Repository Impls, DTO Models, Remote/Local DS};
+
+    \begin{scope}[on background layer]
+        \node[tierbox, fit=(ui)(domain)(data), label={[font=\footnotesize\sffamily\bfseries, text=black]above:TIER 1: CLIENT TIER --- NAOMI MOBILE APPLICATION (FLUTTER / DART)}] (client_tier) {};
+    \end{scope}
+
+    \draw[arr] (ui) -- node[above, font=\tiny\sffamily]{Events/States} (domain);
+    \draw[arr] (domain) -- node[above, font=\tiny\sffamily]{Contracts} (data);
+
+    % Local Tier
+    \node[extcomp, below=1.15cm of ui, xshift=1.25cm, fill=green!4] (localdb) {\textbf{TIER 4: ON-DEVICE PERSISTENCE TIER}\\$\bullet$ \textbf{SQLite (Drift):} \texttt{reading\_history}, \texttt{bookmarks}, \texttt{offline\_downloads}\\$\bullet$ \textbf{Secure Storage:} AES-256 Keystore/Keychain \quad $\bullet$ \textbf{LRU Cache:} $\le 500\text{ MB}$};
+
+    % Cloud Tier
+    \node[extcomp, below=1.15cm of data, xshift=-1.25cm, fill=blue!4] (supabase) {\textbf{TIER 2: APP BACKEND TIER (SUPABASE BaaS)}\\$\bullet$ \textbf{Supabase Auth:} JWT Bearer Engine \quad $\bullet$ \textbf{Storage:} Instrumental MP3 CDN\\$\bullet$ \textbf{PostgreSQL Cloud DB:} \texttt{users}, \texttt{bookmarks}, \texttt{reading\_history} (RLS)};
+
+    % External Tier
+    \node[extcomp, below=1.05cm of supabase, fill=orange!6] (mangadex) {\textbf{TIER 3: EXTERNAL CONTENT TIER (MANGADEX ECOSYSTEM)}\\$\bullet$ \textbf{MangaDex REST API v5:} Search, Comic Metadata, Chapter Feeds ($5\text{ req/s}$)\\$\bullet$ \textbf{MangaDex@Home CDN:} Edge Image Nodes (\texttt{data} WebP \& \texttt{dataSaver} JPG)};
+
+    \draw[arr, <->] (data.south) -- ++(0,-0.45) -| node[pos=0.25, lbl]{Async SQLite \& File I/O ($\le 50\text{ ms}$)} (localdb.north);
+    \draw[arr, <->] (data.south) -- node[left, lbl]{HTTPS / TLS 1.3 (Auth, Sync, Audio)} (supabase.north);
+    \draw[arr, <->] (data.east) -- ++(0.45,0) |- node[pos=0.76, below, lbl]{HTTPS / TLS 1.3 (Metadata \& CDN Pages)} (mangadex.east);
+\end{tikzpicture}
+\caption{C4 Container \& Multi-Tier System Architecture Diagram of the Naomi Ecosystem.}
+\label{fig:c4_architecture}
+\end{figure}
+
+\subsection{In-App Clean Architecture \& BLoC State Management}
+\label{subsec:in_app_arch}
+
+To satisfy Rubric Criterion 1.4 and 2.2 (\textit{``Follows the designed architecture, clear layering, sound state management''}), the internal mobile codebase enforces Uncle Bob's \textbf{Clean Architecture} combined with the unidirectional \textbf{BLoC (Business Logic Component)} pattern (Figure~\ref{fig:clean_arch}):
+
+\begin{itemize}
+    \item \textbf{Presentation Layer (\texttt{lib/presentation/}):} Contains declarative Flutter Screens (\texttt{S01}--\texttt{S11}), reusable UI widgets, and \texttt{BLoC}/\texttt{Cubit} state controllers (\texttt{AuthBloc}, \texttt{HomeBloc}, \texttt{DiscoverBloc}, \texttt{Comic\allowbreak Detail\allowbreak Bloc}, \texttt{ReaderBloc}, \texttt{AudioCubit}, \texttt{DownloadBloc}, \texttt{LibraryBloc}, \texttt{SettingsCubit}, \texttt{Connectivity\allowbreak Cubit}). UI widgets never invoke network or database APIs directly; they only dispatch immutable \texttt{Events} and rebuild reactively on emitted \texttt{States} (\texttt{Initial}, \texttt{Loading}, \texttt{Loaded}, \texttt{Empty}, \texttt{Error}).
+    \item \textbf{Domain Layer (\texttt{lib/domain/} -- Pure Dart Core):} Houses immutable business \texttt{Entities} (\texttt{ComicEntity}, \texttt{ChapterEntity}, \texttt{PageEntity}, \texttt{AmbientTrackEntity}, \texttt{UserProfile\allowbreak Entity}), single-responsibility \texttt{UseCases} (\texttt{SignInUseCase}, \texttt{Search\allowbreak Comics\allowbreak UseCase}, \texttt{Get\allowbreak Chapter\allowbreak Content\allowbreak UseCase}, \texttt{Save\allowbreak Reading\allowbreak Progress\allowbreak UseCase}, \texttt{Get\allowbreak Genre\allowbreak Audio\allowbreak UseCase}), and abstract \texttt{Repository Interfaces} (\texttt{IComicRepository}, \texttt{IAuthRepository}). In strict compliance with \textbf{The Dependency Rule}, the Domain layer has zero imports from Flutter UI, \texttt{dio}, \texttt{drift}, or \texttt{supabase\_flutter}.
+    \item \textbf{Data Layer (\texttt{lib/data/} -- Infrastructure):} Implements the domain contracts (\texttt{Comic\allowbreak Repository\allowbreak Impl}, \texttt{Auth\allowbreak Repository\allowbreak Impl}), serialises JSON/SQLite \texttt{DTO Models}, and orchestrates Remote Data Sources (\texttt{Manga\allowbreak Dex\allowbreak Api\allowbreak Client}, \texttt{Supabase\allowbreak Api\allowbreak Client}) alongside Local Data Sources (\texttt{Drift\allowbreak App\allowbreak Database}, \texttt{Secure\allowbreak Storage\allowbreak Manager}, \texttt{Local\allowbreak File\allowbreak Storage}).
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    box/.style={draw=hcmutblue!80, rounded corners=4pt, fill=white, line width=0.8pt, minimum height=0.9cm, text width=3.1cm, align=center, font=\scriptsize\sffamily},
+    layer/.style={draw=naomiaccent, rounded corners=5pt, line width=0.9pt, fill=naomitint!50, inner sep=7pt},
+    arr/.style={-{Stealth[length=2.0mm,width=1.5mm]}, line width=0.75pt, draw=naomidark}
+]
+    \node[box] (view) {\textbf{Flutter Views}\\Screens \texttt{S01}--\texttt{S11}};
+    \node[box, right=0.85cm of view] (bloc) {\textbf{BLoC / Cubit}\\\texttt{ReaderBloc}, \texttt{AudioCubit}};
+    \node[box, right=0.85cm of bloc] (uc) {\textbf{Domain Use Cases}\\\texttt{GetChapterContent}};
+    \node[box, right=0.85cm of uc] (repo) {\textbf{Repository Impl}\\Offline-First Data};
+
+    \node[box, below=0.8cm of uc, fill=green!5] (local) {\textbf{Local Data Sources}\\Drift SQLite + Keystore};
+    \node[box, below=0.8cm of repo, fill=blue!5] (remote) {\textbf{Remote Data Sources}\\MangaDex + Supabase};
+
+    \draw[arr, transform canvas={yshift=3.5pt}] (view) -- node[above, font=\tiny\sffamily]{1. Event} (bloc);
+    \draw[arr, transform canvas={yshift=-3.5pt}] (bloc) -- node[below, font=\tiny\sffamily]{6. State} (view);
+    \draw[arr] (bloc) -- node[above, font=\tiny\sffamily]{2. Execute} (uc);
+    \draw[arr] (uc) -- node[above, font=\tiny\sffamily]{3. Contract} (repo);
+    \draw[arr, <->] (repo.south) -- (local.north east);
+    \draw[arr, <->] (repo.south) -- (remote.north);
+\end{tikzpicture}
+\caption{Unidirectional data and state flow across Clean Architecture layers (\texttt{UI} $\leftrightarrow$ \texttt{BLoC} $\leftrightarrow$ \texttt{UseCase} $\leftrightarrow$ \texttt{Repository}).}
+\label{fig:clean_arch}
+\end{figure}
+
+\subsection{UML Sequence Diagrams for Core System Flows}
+\label{subsec:sequence_diagrams}
+
+Figures~\ref{fig:seq_reader}, \ref{fig:seq_download}, and \ref{fig:seq_auth} model the exact runtime message choreography across architectural components for the three primary operational flows of \textbf{Naomi}.
+
+\subsubsection{Flow 1: Full-Screen Preloaded Reading with Genre Ambient Audio (UC-03, UC-04, UC-05)}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    lifeline/.style={draw=hcmutblue!80!black, fill=naomitint, rounded corners=2pt, font=\tiny\sffamily\bfseries, minimum height=0.65cm, minimum width=1.65cm, align=center},
+    msg/.style={-{Stealth[length=1.8mm,width=1.3mm]}, line width=0.6pt, draw=naomidark},
+    ret/.style={-{Stealth[length=1.8mm,width=1.3mm]}, line width=0.6pt, dashed, draw=naomimuted!90!black},
+    lbl/.style={font=\tiny\sffamily, inner sep=1pt, fill=white}
+]
+    \node[lifeline] (p0) at (0,0) {Reader\\(User)};
+    \node[lifeline] (p1) at (2.1,0) {ReaderUI\\(S10/S05)};
+    \node[lifeline] (p2) at (4.3,0) {ReaderBloc};
+    \node[lifeline] (p3) at (6.5,0) {AudioCubit /\\JustAudio};
+    \node[lifeline] (p4) at (8.8,0) {ComicRepoImpl};
+    \node[lifeline] (p5) at (11.2,0) {Local SQLite\\(Drift)};
+    \node[lifeline] (p6) at (13.6,0) {MangaDex API\\\& Supabase};
+
+    \foreach \i in {0,...,6} {
+        \draw[dashed, gray!70, line width=0.5pt] (p\i.south) -- ++(0,-7.4);
+    }
+
+    \draw[msg] (0,-0.8) -- node[above, lbl]{1. Tap Chapter 24 (Open S10 Preload)} (2.1,-0.8);
+    \draw[msg] (2.1,-1.3) -- node[above, lbl]{2. add(FetchChapterEvent("ch-24"))} (4.3,-1.3);
+    \draw[ret] (4.3,-1.75) -- node[above, lbl]{3. emit(ReaderPreloadingState)} (2.1,-1.75);
+    \draw[msg] (4.3,-2.25) -- node[above, lbl]{4. getChapterContent("ch-24")} (8.8,-2.25);
+
+    \draw[rounded corners=2pt, draw=naomiaccent, fill=naomitint!30] (8.1,-2.55) rectangle (14.3,-4.25);
+    \node[font=\tiny\sffamily\bfseries, anchor=north west, text=black] at (8.15,-2.57) {[alt] Offline Cache Hit vs.\ Online CDN Fetch};
+    \draw[msg] (8.8,-3.35) -- node[above, lbl]{5a. queryOfflineChapter("ch-24")} (11.2,-3.35);
+    \draw[msg] (8.8,-3.95) -- node[above, lbl]{5b. GET /at-home/server/ch-24 + Ambient Track} (13.6,-3.95);
+
+    \draw[ret] (8.8,-4.55) -- node[above, lbl]{6. ChapterEntity (42/42 Pages Pre-buffered + TrackURL)} (4.3,-4.55);
+    \draw[ret] (4.3,-5.05) -- node[above, lbl]{7. emit(ReaderLoadedState) $\to$ Render S05 at 60 FPS} (2.1,-5.05);
+    \draw[msg] (4.3,-5.6) -- node[above, lbl]{8. playGenreTrack(url, vol: 0.30)} (6.5,-5.6);
+    \draw[ret] (6.5,-6.1) -- node[above, lbl]{9. emit(AudioPlayingState) on S05/S06} (2.1,-6.1);
+
+    \draw[msg] (0,-6.65) -- node[above, lbl]{10. Scroll to Page 18/42} (2.1,-6.65);
+    \draw[msg] (2.1,-7.15) -- node[above, lbl]{11. UpdatePageProgress(18) $\to$ SQLite ($\le 50\text{ ms}$) \& Supabase} (11.2,-7.15);
+\end{tikzpicture}
+\caption{UML Sequence Diagram for Flow 1: Full-Chapter Preload (\texttt{S10}), 60 FPS Reading (\texttt{S05}), Genre Ambient Audio (\texttt{S06}), and Page Progress Sync.}
+\label{fig:seq_reader}
+\end{figure}
+
+\subsubsection{Flow 2: Offline Chapter Download \& Sandboxed Persistence (UC-06)}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    lifeline/.style={draw=hcmutblue!80!black, fill=naomitint, rounded corners=2pt, font=\tiny\sffamily\bfseries, minimum height=0.65cm, minimum width=1.8cm, align=center},
+    msg/.style={-{Stealth[length=1.8mm,width=1.3mm]}, line width=0.6pt, draw=naomidark},
+    ret/.style={-{Stealth[length=1.8mm,width=1.3mm]}, line width=0.6pt, dashed, draw=naomimuted!90!black},
+    lbl/.style={font=\tiny\sffamily, inner sep=1pt, fill=white}
+]
+    \node[lifeline] (d0) at (0,0) {Reader\\(User)};
+    \node[lifeline] (d1) at (2.4,0) {Detail Screen\\(S04 / S11)};
+    \node[lifeline] (d2) at (5.0,0) {DownloadBloc};
+    \node[lifeline] (d3) at (7.8,0) {DownloadMgr\\Service};
+    \node[lifeline] (d4) at (10.6,0) {MangaDex@Home\\Image CDN};
+    \node[lifeline] (d5) at (13.4,0) {Sandboxed FS\\\& SQLite DB};
+
+    \foreach \i in {0,...,5} {
+        \draw[dashed, gray!70, line width=0.5pt] (d\i.south) -- ++(0,-5.6);
+    }
+
+    \draw[msg] (0,-0.8) -- node[above, lbl]{1. Tap "Download" on Ch.\ 24 (S04)} (2.4,-0.8);
+    \draw[msg] (2.4,-1.3) -- node[above, lbl]{2. StartDownloadChapterEvent("ch-24")} (5.0,-1.3);
+    \draw[msg] (5.0,-1.8) -- node[above, lbl]{3. enqueueTask("ch-24") \& insert PENDING row} (13.4,-1.8);
+
+    \draw[rounded corners=2pt, draw=mustgreen!80!black, fill=green!4] (1.8,-2.15) rectangle (14.1,-4.0);
+    \node[font=\tiny\sffamily\bfseries, anchor=north west, text=black] at (1.85,-2.17) {[loop] For each page $n \in \{1..42\}$ of Chapter 24};
+    \draw[msg] (7.8,-2.85) -- node[above, lbl]{4. GET /data/\{hash\}/page\_n.webp} (10.6,-2.85);
+    \draw[msg] (7.8,-3.25) -- node[above, lbl]{5. Write file to ApplicationDocumentsDirectory} (13.4,-3.25);
+    \draw[ret] (5.0,-3.75) -- node[above, lbl]{6. emit(DownloadProgressState: 68\%, 24.5/36 MB on S11)} (2.4,-3.75);
+
+    \draw[msg] (7.8,-4.45) -- node[above, lbl]{7. UPDATE offline\_downloads SET status='completed'} (13.4,-4.45);
+    \draw[ret] (5.0,-5.05) -- node[above, lbl]{8. emit(DownloadSuccessState) $\to$ Show "Saved" badge \& S07 Library} (2.4,-5.05);
+\end{tikzpicture}
+\caption{UML Sequence Diagram for Flow 2: Sequential Chapter Page Download (\texttt{S11}) and Local SQLite Registration.}
+\label{fig:seq_download}
+\end{figure}
+
+\subsubsection{Flow 3: User Authentication \& Hardware-Backed Auto-Login (UC-00)}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    lifeline/.style={draw=hcmutblue!80!black, fill=naomitint, rounded corners=2pt, font=\tiny\sffamily\bfseries, minimum height=0.65cm, minimum width=1.9cm, align=center},
+    msg/.style={-{Stealth[length=1.8mm,width=1.3mm]}, line width=0.6pt, draw=naomidark},
+    ret/.style={-{Stealth[length=1.8mm,width=1.3mm]}, line width=0.6pt, dashed, draw=naomimuted!90!black},
+    lbl/.style={font=\tiny\sffamily, inner sep=1pt, fill=white}
+]
+    \node[lifeline] (a0) at (0,0) {Reader\\(User)};
+    \node[lifeline] (a1) at (2.7,0) {SignInScreen\\(S01 / S02)};
+    \node[lifeline] (a2) at (5.6,0) {AuthBloc};
+    \node[lifeline] (a3) at (8.5,0) {AuthRepoImpl};
+    \node[lifeline] (a4) at (11.2,0) {SecureStorage\\(AES-256)};
+    \node[lifeline] (a5) at (13.6,0) {Supabase Auth\\Server};
+
+    \foreach \i in {0,...,5} {
+        \draw[dashed, gray!70, line width=0.5pt] (a\i.south) -- ++(0,-5.1);
+    }
+
+    \draw[msg] (0,-0.8) -- node[above, lbl]{1. Enter Email + Password, tap "Sign In"} (2.7,-0.8);
+    \draw[msg] (2.7,-1.3) -- node[above, lbl]{2. add(LoginSubmittedEvent)} (5.6,-1.3);
+    \draw[msg] (5.6,-1.8) -- node[above, lbl]{3. signInWithPassword(email, password)} (8.5,-1.8);
+    \draw[msg] (8.5,-2.3) -- node[above, lbl]{4. POST /auth/v1/token?grant\_type=password} (13.6,-2.3);
+    \draw[ret] (13.6,-2.85) -- node[above, lbl]{5. HTTP 200 OK \{access\_token, refresh\_token, user\}} (8.5,-2.85);
+    \draw[msg] (8.5,-3.4) -- node[above, lbl]{6. writeSecure(jwt\_tokens) via Keystore/Keychain} (11.2,-3.4);
+    \draw[ret] (5.6,-4.0) -- node[above, lbl]{7. emit(AuthenticatedState) $\to$ Navigate to S02 Home} (2.7,-4.0);
+    \draw[ret] (11.2,-4.65) -- node[above, lbl]{8. [Subsequent Launch] Read AES-256 Token $\to$ Auto-Login ($\le 0.8\text{ s}$)} (2.7,-4.65);
+\end{tikzpicture}
+\caption{UML Sequence Diagram for Flow 3: Supabase JWT Authentication (\texttt{S01}) and Hardware-Backed Keystore Persistence.}
+\label{fig:seq_auth}
+\end{figure}
+
+\subsection{Justified Technology Choices}
+\label{subsec:tech_justification}
+
+To fulfil Rubric Criterion 1.4 (\textit{``justified technology choices''}), Table~\ref{tab:tech_justification} presents a rigorous comparative trade-off evaluation across the four foundational architectural decisions of \textbf{Naomi}.
+
+\begin{table}[H]
+\centering
+\caption{Comparative architectural trade-off analysis and justification of selected technologies.}
+\label{tab:tech_justification}
+\footnotesize
+\renewcommand{\arraystretch}{1.26}
+\begin{tabularx}{\textwidth}{L{2.8cm} L{3.4cm} L{3.3cm} Y}
+\toprule
+\rowcolor{tablehead}
+\textbf{Architectural Layer} & \textbf{Selected Technology} & \textbf{Evaluated Alternatives} & \textbf{Technical Rationale \& Mobile Engineering Justification} \\
+\midrule
+\textbf{Cross-Platform Mobile Framework} & \textbf{Flutter 3.x (Dart, Impeller / Skia)} & React Native (JS Bridge), Native Kotlin / Swift & \textbf{Eliminates bridge bottlenecks during Webtoon scrolling:} Flutter compiles AOT to native ARM64 code and renders every pixel directly onto its own Impeller/Skia GPU canvas, sustaining $\ge 60\text{ FPS}$ (\texttt{NFR-03}) across 50-page vertical strips while halving development effort compared to dual Kotlin/Swift codebases. \\
+\rowcolor{tablerow}
+\textbf{In-App Architecture \& State Management} & \textbf{Clean Architecture + \texttt{flutter\_bloc}} & MVC / Basic MVVM, Vanilla \texttt{Provider} / \texttt{setState} & \textbf{Strict separation of concerns \& deterministic unit testing:} Unidirectional \texttt{Event $\to$ BLoC $\to$ State} streams prevent ``Fat Widget/Controller'' anti-patterns and allow $100\%$ isolated unit testing of domain use cases and BLoC transitions in Assignment 02 via \texttt{bloc\_test}. \\
+\textbf{Cloud Backend \& Auth Platform} & \textbf{Supabase BaaS (PostgreSQL + Auth + Storage)} & Custom Node.js/Express + MongoDB, Firebase & \textbf{Relational integrity + zero-downtime cloud infrastructure:} Unlike NoSQL Firestore/MongoDB, Supabase provides a true \textbf{PostgreSQL} engine enforcing 3NF/BCNF foreign keys and database-level \textbf{Row-Level Security (RLS)}, paired with built-in JWT Auth and CDN Buckets for streaming MP3 ambient audio. \\
+\rowcolor{tablerow}
+\textbf{On-Device Local Database} & \textbf{SQLite via \texttt{Drift} (Type-Safe ORM)} & \texttt{SharedPreferences}, NoSQL \texttt{Hive} & \textbf{Relational hierarchy \& sub-50 ms indexed queries:} Comic data is inherently relational (\texttt{comics} $1\text{:}N$ \texttt{chapters} $1\text{:}N$ \texttt{pages}). SQLite supports foreign-key \texttt{ON DELETE CASCADE} and composite indexes on \texttt{(user\_id, chapter\_id)}, achieving $\le 50\text{ ms}$ query times (\texttt{NFR-09}) without blocking the UI thread. \\
+\bottomrule
+\end{tabularx}
+\end{table}

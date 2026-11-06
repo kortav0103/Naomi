@@ -1,0 +1,129 @@
+\section{Non-Functional Requirements \& Mobile Constraints}
+\label{sec:nfr}
+
+\subsection{SMART Non-Functional Design Philosophy}
+\label{subsec:nfr_philosophy}
+
+Delivering functional features alone is insufficient for a media-intensive mobile entertainment application such as \textbf{Naomi}. Mobile devices operate under strict physical and operating-system constraints: \textbf{finite RAM budgets, limited battery capacity, fluctuating cellular 4G/5G connectivity during transit, and stringent OS sandboxing/permission models}. Consequently, every Non-Functional Requirement (NFR) in this specification is engineered according to the \textbf{SMART} principle:
+\begin{itemize}
+    \item \textbf{Specific \& Mobile-Relevant:} Directly tied to concrete mobile runtime mechanisms (GPU frame rendering, Android Keystore/iOS Keychain, OS AudioSession focus, SQLite indexing, and System Photo Picker).
+    \item \textbf{Measurable:} $100\%$ of requirements define explicit \textbf{quantitative metrics, numerical acceptance thresholds, and physical units} ($\text{ms}$, $\text{s}$, $\text{FPS}$, $\text{MB}$, $\%$/hour), eliminating vague statements such as \textit{``the app must be fast''}.
+    \item \textbf{Achievable, Relevant \& Time-Bound:} Verified through industry-standard profiling tools (\textit{Flutter DevTools, Android Studio Memory/Network Profiler, Android Vitals, and Battery Historian}) during Assignment 02 acceptance testing.
+\end{itemize}
+
+\subsection{Master Non-Functional Requirements Matrix}
+\label{subsec:nfr_matrix}
+
+Table~\ref{tab:nfr_matrix} consolidates all 18 quantitative Non-Functional Requirements (\texttt{NFR-01} to \texttt{NFR-18}) structured across the six core mobile engineering pillars required by the course rubric.
+
+\begin{scriptsize}
+\renewcommand{\arraystretch}{1.24}
+\begin{longtable}{C{1.2cm} L{2.0cm} L{2.8cm} L{3.5cm} C{2.1cm} L{2.25cm}}
+\caption{Master Non-Functional Requirements Matrix (\texttt{NFR-01} to \texttt{NFR-18}) with SMART thresholds and verification tools.}
+\label{tab:nfr_matrix} \\
+\toprule
+\rowcolor{tablehead}
+\textbf{NFR ID} & \textbf{Pillar} & \textbf{Technical Criterion} & \textbf{Quantitative Metric} & \textbf{Threshold} & \textbf{Verification Tool} \\
+\midrule
+\endfirsthead
+\multicolumn{6}{c}{{\bfseries \tablename\ \thetable{} -- continued from previous page}} \\
+\toprule
+\rowcolor{tablehead}
+\textbf{NFR ID} & \textbf{Pillar} & \textbf{Technical Criterion} & \textbf{Quantitative Metric} & \textbf{Threshold} & \textbf{Verification Tool} \\
+\midrule
+\endhead
+\midrule \multicolumn{6}{r}{{Continued on next page}} \\ \bottomrule
+\endfoot
+\bottomrule
+\endlastfoot
+
+\textbf{NFR-01} & \textbf{Performance} & Cold Start Time & Elapsed time from app icon tap to first rendered Home/Sign-In frame & $\le 2.0\text{ s}$ & Android Vitals / Flutter DevTools \\
+\rowcolor{tablerow}
+\textbf{NFR-02} & \textbf{Performance} & Warm / Hot Start Time & Time to resume app from background to interactive foreground state & $\le 0.8\text{ s}$ & Flutter DevTools Performance \\
+\textbf{NFR-03} & \textbf{Performance} & Reader Scrolling Frame Rate & Sustained rendering rate while scrolling a 50-page Webtoon chapter & $\ge 60\text{ FPS}$ ($\le 16.6\text{ ms}$) & Flutter Performance Overlay \\
+\rowcolor{tablerow}
+\textbf{NFR-04} & \textbf{Performance} & Chapter Preload Initiation Latency & Time to resolve MangaDex@Home CDN node and begin pre-buffering on \texttt{S10} over 4G & $\le 1.5\text{ s}$ & Network Profiler / Stopwatch \\
+\textbf{NFR-05} & \textbf{Performance} & Authentication API Response Time & Round-trip latency for Supabase Auth JWT token issuance & $\le 1.0\text{ s}$ & Postman / Network Profiler \\
+\rowcolor{tablerow}
+\textbf{NFR-06} & \textbf{Memory} & Peak Runtime RAM Footprint & Maximum heap + GPU texture memory consumed during long-chapter reading & $\le 250\text{ MB}$ & Android Studio Memory Profiler \\
+\textbf{NFR-07} & \textbf{Offline \& Storage} & Dynamic Image Disk Cache Cap & Maximum storage footprint of temporary network image cache before eviction & $\le 500\text{ MB}$ (LRU policy) & App File Storage Inspector \\
+\rowcolor{tablerow}
+\textbf{NFR-08} & \textbf{Offline \& Storage} & Offline Mode Transition Latency & Time to detect network loss, suppress crash, and route to \texttt{S09}/SQLite & $\le 300\text{ ms}$ & ConnectivityPlus Listener Test \\
+\textbf{NFR-09} & \textbf{Offline \& Storage} & Local SQLite Query / Write Speed & Execution time for reading/updating \texttt{reading\_history} or \texttt{bookmarks} & $\le 50\text{ ms}$ / query & SQLite Benchmark / Drift Log \\
+\rowcolor{tablerow}
+\textbf{NFR-10} & \textbf{Security} & Hardware-Backed Token Storage & Cryptographic algorithm protecting stored JWT access and refresh tokens & \textbf{AES-256 GCM} (Keystore/KC) & Root/Sandbox Storage Audit \\
+\textbf{NFR-11} & \textbf{Security} & Transport Layer Encryption & Share of client-server traffic encrypted with modern TLS & \textbf{100\% HTTPS / TLS 1.3} & Charles Proxy / Manifest Audit \\
+\rowcolor{tablerow}
+\textbf{NFR-12} & \textbf{Permissions} & Principle of Least Privilege & Number of dangerous OS runtime permissions requested (GPS, Camera, Storage, Mic) & \textbf{0 Dangerous Permissions} & \texttt{AndroidManifest} \& Play Policy \\
+\textbf{NFR-13} & \textbf{Permissions} & Graceful Permission Denial Handling & Application stability when user denies optional \texttt{POST\_NOTIFICATIONS} (API 33+) & \textbf{0 crashes}; fallback to in-app toast (\texttt{S11}) & Manual UI Acceptance Test \\
+\rowcolor{tablerow}
+\textbf{NFR-14} & \textbf{Platform} & OS Version Compatibility & Minimum and target mobile OS versions supported & \textbf{Android 8.0+} (API 26--34), \textbf{iOS 13.0+} & Firebase Test Lab / Real Devices \\
+\textbf{NFR-15} & \textbf{Platform} & Multi-Aspect Ratio Responsiveness & UI layout integrity across $16\text{:}9$ to $21\text{:}9$ screens, notches, and gesture bars & \textbf{100\% within SafeArea} & Flutter Layout Inspector \\
+\rowcolor{tablerow}
+\textbf{NFR-16} & \textbf{Battery} & Active Reading + Audio Battery Drain & Battery percentage consumed during 60 minutes of continuous reading + ambient audio & $\le 8\%$ / hour & Android Battery Historian \\
+\textbf{NFR-17} & \textbf{Battery} & Audio Focus Interruption Latency & Time to pause instrumental playback upon incoming call or screen lock & $\le 100\text{ ms}$ & \texttt{AudioSession} Focus Test \\
+\rowcolor{tablerow}
+\textbf{NFR-18} & \textbf{Network} & Cellular Bandwidth Reduction & Image payload size reduction when switching to MangaDex \texttt{dataSaver} on 4G/5G & \textbf{40\%--60\%} reduction & Network Traffic Monitor \\
+\end{longtable}
+\end{scriptsize}
+
+\subsection{Detailed Technical Justification across the Six Mobile Pillars}
+\label{subsec:nfr_pillars}
+
+\subsubsection{Pillar 1: Performance, Frame Budget \& Preload Latency (NFR-01 to NFR-06)}
+\begin{enumerate}
+    \item \textbf{Application Startup (\texttt{NFR-01} $\le 2.0\text{ s}$, \texttt{NFR-02} $\le 0.8\text{ s}$):} Cold start is optimised by deferring non-critical service initialisation (\textit{lazy dependency injection}) until after the first frame renders and reading cached Home metadata from local SQLite Drift immediately before background cloud synchronisation begins.
+    \item \textbf{Sustained 60 FPS Frame Budget (\texttt{NFR-03} $\le 16.6\text{ ms/frame}$) \& RAM Ceiling (\texttt{NFR-06} $\le 250\text{ MB}$):} A standard $60\text{ Hz}$ display requires every UI and raster frame to complete within $1000\text{ ms} / 60 \approx 16.6\text{ ms}$. To prevent frame drops and Out-Of-Memory crashes on mid-range $3\text{--}4\text{ GB}$ RAM devices, \textbf{Naomi} combines \textbf{Full-Chapter Pre-buffering (\texttt{S10})} on disk with a \textbf{Virtualised Viewport List (\texttt{ListView.builder} / \texttt{SliverList})} in GPU memory: only the pages currently visible inside the viewport plus a $\pm 2$-page lookahead buffer are decoded into active GPU textures, while off-screen page textures are immediately recycled.
+    \item \textbf{Chapter Preload Initiation (\texttt{NFR-04} $\le 1.5\text{ s}$) \& Auth Latency (\texttt{NFR-05} $\le 1.0\text{ s}$):} Resolving the nearest \texttt{MangaDex@Home} CDN edge node (\texttt{API 03}) and initiating concurrent page pre-buffering on \texttt{S10} completes within $1.5\text{ s}$ on standard 4G, while Supabase JWT authentication (\texttt{API 04}) completes within $1.0\text{ s}$.
+\end{enumerate}
+
+\subsubsection{Pillar 2: Offline Behaviour, Bounded Caching \& Local Persistence (NFR-07 to NFR-09)}
+\begin{enumerate}
+    \item \textbf{Bounded 500 MB LRU Disk Cache (\texttt{NFR-07}):} Temporary online page caches (\textit{Tier 4 Storage}) are strictly capped at a hard ceiling of $500\text{ MB}$ (soft warning at $400\text{ MB}$). When the cache reaches $500\text{ MB}$, a Least Recently Used (\textbf{LRU}) eviction worker prunes the oldest accessed files down to $350\text{ MB}$. User-initiated \textit{Offline Downloads} (\textit{Tier 3 Storage}) reside in a separate protected directory (\texttt{ApplicationDocumentsDirectory}) and are never auto-evicted.
+    \item \textbf{Sub-300 ms Offline Fallback (\texttt{NFR-08}) \& Sub-50 ms SQLite I/O (\texttt{NFR-09}):} By subscribing to \texttt{ConnectivityPlus} network state streams, \textbf{Naomi} detects sudden connectivity loss (e.g., entering an underground tunnel or Airplane Mode) within $\le 300\text{ ms}$ and routes uncached chapter requests cleanly to \texttt{S09} (\textit{Offline Error State}) without unhandled exceptions. Foreign-key indexing on \texttt{(user\_id, chapter\_id)} and \texttt{(user\_id, comic\_id)} guarantees asynchronous SQLite reads/writes under $50\text{ ms}$.
+\end{enumerate}
+
+\subsubsection{Pillar 3: Mobile Security \& Cryptographic Privacy (NFR-10, NFR-11)}
+\begin{enumerate}
+    \item \textbf{Hardware-Backed Token Encryption (\texttt{NFR-10}):} Sensitive credentials (\texttt{access\_token}, \texttt{refresh\_token}) are never stored in plain-text \texttt{SharedPreferences}. All tokens are persisted exclusively via \texttt{FlutterSecureStorage}, backed by \textbf{AES-256 GCM in Android Keystore} and the \textbf{iOS Keychain (Secure Enclave)}.
+    \item \textbf{Mandatory TLS 1.3 \& Cleartext Blocking (\texttt{NFR-11}):} $100\%$ of network communication with Supabase and MangaDex is enforced over \textbf{HTTPS / TLS 1.3}. Plain-text HTTP traffic is explicitly disabled at the OS manifest level (\texttt{android:usesCleartextTraffic="false"}). API keys are injected at compile time via \texttt{--dart-define} and protected in release builds with R8/ProGuard code obfuscation.
+\end{enumerate}
+
+\subsubsection{Pillar 4: System Permissions \& Zero-Storage-Permission Visual Search (NFR-12, NFR-13)}
+\begin{enumerate}
+    \item \textbf{Zero Dangerous Permissions (\texttt{NFR-12}):} Adhering strictly to the \textit{Principle of Least Privilege}, \textbf{Naomi} requests \textbf{zero dangerous runtime permissions}: no GPS location, no Contacts, no Camera hardware access, no Microphone, and no broad External Storage read permissions. Only standard install-time network permissions (\texttt{INTERNET}, \texttt{ACCESS\_NETWORK\_STATE}) and optional Android 13+ \texttt{POST\_NOTIFICATIONS} (for download progress banners, \texttt{NFR-13}) are declared.
+    \item \textbf{System Photo Picker Architecture for Visual Search (\texttt{FR-11}):} Rather than requesting intrusive \texttt{READ\_\allowbreak MEDIA\_\allowbreak IMAGES} or \texttt{READ\_\allowbreak EXTERNAL\_\allowbreak STORAGE} permissions to scan user screenshots, \textbf{Naomi} invokes the native OS \textbf{System Photo Picker} (\texttt{AndroidX PickVisualMedia} / iOS \texttt{PHPicker\allowbreak ViewController}), which grants a temporary, single-file read-only URI only for the specific screenshot selected by the user.
+\end{enumerate}
+
+\subsubsection{Pillar 5 \& Pillar 6: Platform Support, Battery \& Network Efficiency (NFR-14 to NFR-18)}
+\begin{enumerate}
+    \item \textbf{Broad OS Coverage \& Responsive SafeArea (\texttt{NFR-14}, \texttt{NFR-15}):} Targeting \textbf{Android 8.0+ (API 26 to API 34)} covers $>95.4\%$ of active Android devices globally alongside \textbf{iOS 13.0+}. Every screen is wrapped in \texttt{SafeArea} with an $8\text{ px}$ spatial grid to adapt cleanly across $16\text{:}9$ through $21\text{:}9$ aspect ratios, camera notches, and gesture navigation bars.
+    \item \textbf{Battery Efficiency ($\le 8\%$/hour, \texttt{NFR-16}) \& Audio Focus (\texttt{NFR-17}):} The AMOLED dark reader canvas (\texttt{\#111116}) reduces OLED pixel power draw by up to $30\%$, while \texttt{just\_audio} delegates MP3 decoding to native hardware codecs. When an incoming phone call, alarm, or screen lock occurs, \texttt{AudioSession} relinquishes audio focus and pauses playback within $\le 100\text{ ms}$.
+    \item \textbf{Cellular Data Saver (\texttt{NFR-18}):} When \texttt{ConnectivityPlus} detects a metered cellular connection (4G/5G) instead of Wi-Fi, the repository automatically requests compressed \texttt{dataSaver} WebP/JPG assets from \texttt{MangaDex@Home} (\texttt{API 03}), cutting bandwidth consumption by $40\%\text{--}60\%$.
+\end{enumerate}
+
+\subsection{NFR Quality Assurance \& Profiling Plan}
+\label{subsec:nfr_qa_plan}
+
+Table~\ref{tab:nfr_qa_plan} defines the concrete profiling protocol to be executed in Assignment 02 to verify compliance with all NFR thresholds.
+
+\begin{table}[H]
+\centering
+\caption{Quantitative QA verification and profiling protocol for Assignment 02 acceptance.}
+\label{tab:nfr_qa_plan}
+\footnotesize
+\renewcommand{\arraystretch}{1.22}
+\begin{tabularx}{\textwidth}{L{3.5cm} L{3.6cm} Y}
+\toprule
+\rowcolor{tablehead}
+\textbf{Verification Target} & \textbf{Profiling Instrument} & \textbf{Step-by-Step Acceptance Test Procedure} \\
+\midrule
+\textbf{Frame Rate ($\ge 60\text{ FPS}$) \& Preload (\texttt{NFR-03, NFR-04})} & Flutter Performance Overlay \& DevTools Timeline & Enable Performance Overlay in profile mode; preload and scroll rapidly through 10 consecutive 40-page chapters; verify UI and Raster threads remain below the $16.6\text{ ms}$ frame budget line. \\
+\rowcolor{tablerow}
+\textbf{RAM Ceiling ($\le 250\text{ MB}$) \& Texture Recycling (\texttt{NFR-06})} & Android Studio Memory Profiler & Attach a physical Android device; read continuously for 30 minutes across multiple chapters; verify total memory stays $\le 250\text{ MB}$ with zero monotonic texture leaks. \\
+\textbf{Offline Survival ($\le 300\text{ ms}$) \& SQLite Speed (\texttt{NFR-08, NFR-09})} & Airplane Mode Toggle \& Drift Query Logger & Toggle Airplane Mode mid-session; verify uncached chapters route to \texttt{S09} within $300\text{ ms}$, downloaded chapters open from SQLite, and page-progress writes complete in $\le 50\text{ ms}$. \\
+\rowcolor{tablerow}
+\textbf{Battery Drain ($\le 8\%$/hr) \& Security (\texttt{NFR-10..12, NFR-16})} & Android Battery Historian \& Manifest/Keystore Audit & Measure 60-minute reading + ambient audio session via Battery Historian; inspect \texttt{AndroidManifest.xml} to confirm zero dangerous permissions and \texttt{usesCleartextTraffic="false"}. \\
+\bottomrule
+\end{tabularx}
+\end{table}

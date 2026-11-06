@@ -1,0 +1,220 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.0cm,headheight=28pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{enumitem}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks]{hyperref}
+\urlstyle{tt}
+
+% ---------------- COLOR PALETTE (DIAGRAMS & TABLES ONLY; TEXT IS BLACK) ----------------
+\definecolor{hcmutblue}{HTML}{003DA5}
+\definecolor{hcmutcyan}{HTML}{0080DF}
+\definecolor{naomiaccent}{HTML}{7066A6}
+\definecolor{naomitint}{HTML}{F0EFF8}
+\definecolor{naomicanvas}{HTML}{F8F8FC}
+\definecolor{naomidark}{HTML}{1C1C26}
+\definecolor{naomimuted}{HTML}{757588}
+\definecolor{codebg}{HTML}{FBF5FA}
+\definecolor{codeframe}{HTML}{D8D0E5}
+\definecolor{tablehead}{HTML}{EAEAF4}
+\definecolor{tablerow}{HTML}{F7F7FB}
+\definecolor{mustgreen}{HTML}{15803D}
+\definecolor{shouldblue}{HTML}{0369A1}
+\definecolor{couldamber}{HTML}{B45309}
+\definecolor{wontgray}{HTML}{64748B}
+
+% ---------------- CODE LISTINGS STYLE (BLACK TEXT ON LIGHT BOX) ----------------
+\lstdefinelanguage{json}{
+    basicstyle=\ttfamily\footnotesize\color{black},
+    numbers=left,
+    numberstyle=\tiny\color{black!70},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=false,
+    frame=tb,
+    backgroundcolor=\color{codebg},
+    rulecolor=\color{black!60},
+    string=[s]{"}{"},
+    stringstyle=\color{black},
+    comment=[l]{//},
+    commentstyle=\color{black!75}\itshape
+}
+
+\lstdefinelanguage{gherkin}{
+    basicstyle=\ttfamily\footnotesize\color{black},
+    numbers=left,
+    numberstyle=\tiny\color{black!70},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    frame=tb,
+    backgroundcolor=\color{codebg},
+    rulecolor=\color{black!60},
+    keywords={Feature,Scenario,Given,When,Then,And,But},
+    keywordstyle=\color{black}\bfseries,
+    string=[b]",
+    stringstyle=\color{black},
+    comment=[l]{\#},
+    commentstyle=\color{black!75}\itshape
+}
+
+\lstset{
+    basicstyle=\ttfamily\footnotesize\color{black},
+    numbers=left,
+    numberstyle=\tiny\color{black!70},
+    numbersep=8pt,
+    backgroundcolor=\color{codebg},
+    frame=tb,
+    rulecolor=\color{black!60},
+    breaklines=true,
+    breakatwhitespace=false,
+    tabsize=2,
+    captionpos=t,
+    keywordstyle=\color{black}\bfseries,
+    commentstyle=\color{black!75}\itshape,
+    stringstyle=\color{black},
+    showstringspaces=false,
+    aboveskip=10pt,
+    belowskip=10pt
+}
+
+% ---------------- HEADER & FOOTER (HCMUT CSE TEMPLATE) ----------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{%
+    \begin{tabular}{@{}l@{\hspace{8pt}}l@{}}
+        \multirow{2}{*}{\includegraphics[height=0.72cm]{hcmut.png}} & \texttt{\footnotesize Ho Chi Minh City University of Technology} \\
+        & \texttt{\footnotesize Faculty of Computer Science and Engineering}
+    \end{tabular}%
+}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ---------------- TYPOGRAPHY & SPACING ----------------
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0.45em}
+\renewcommand{\baselinestretch}{1.15}
+\emergencystretch=3em
+\setlist[itemize]{topsep=3pt,itemsep=2pt,leftmargin=1.8em}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,leftmargin=1.8em}
+\captionsetup{font=small,labelfont=bf,skip=6pt}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\newcommand{\badgeMust}{\textbf{MUST-HAVE}}
+\newcommand{\badgeShould}{\textbf{SHOULD-HAVE}}
+\newcommand{\badgeCould}{\textbf{COULD-HAVE}}
+\newcommand{\badgeWont}{\textbf{WON'T-HAVE}}
+\newcommand{\musicnote}{%
+    \tikz[baseline=-0.1ex,scale=0.065,line width=0.6pt]{%
+        \fill (0,0) ellipse (1.6 and 1.2);
+        \fill (3.5,0.6) ellipse (1.6 and 1.2);
+        \draw (1.4,0) -- (1.4,5.0) -- (4.9,5.8) -- (4.9,0.6);
+        \draw[line width=1.3pt] (1.4,4.5) -- (4.9,5.3);
+    }%
+}
+
+\begin{document}
+
+% =========================================================================
+% COVER PAGE (EXACT HCMUT COVER SAMPLE LAYOUT)
+% =========================================================================
+\begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+    \vspace*{0.6cm}
+    {\large Vietnam National University, Ho Chi Minh City\par}
+    \vspace{0.15cm}
+    {\large University of Technology\par}
+    \vspace{0.15cm}
+    {\large\scshape FACULTY OF COMPUTER SCIENCE AND ENGINEERING\par}
+    
+    \vspace{1.8cm}
+    \includegraphics[width=4.4cm]{hcmut.png}\par
+    \vspace{2.0cm}
+    
+    \begin{minipage}{0.84\textwidth}
+        \centering
+        {\Large\bfseries Mobile Application Development (CO3043)\par}
+        \vspace{0.35cm}
+        \rule{\textwidth}{0.6pt}\par
+        \vspace{0.45cm}
+        {\Large\bfseries Assignment 1: Specification Document\par}
+        \vspace{0.45cm}
+        {\LARGE\bfseries Entertainment App: Naomi\par}
+        \vspace{0.2cm}
+        {\normalsize\itshape A Content-First, Ad-Free Webtoon \& Manga Reader with Genre-Aware Instrumental Ambient Audio and Hybrid Offline-First Architecture\par}
+        \vspace{0.45cm}
+        \rule{\textwidth}{0.6pt}\par
+    \end{minipage}
+    
+    \vspace{2.4cm}
+    \begin{tabular}{rl}
+        \textbf{Instructor(s):} & Phan Tran Minh Khue \\[4pt]
+        \textbf{Class:} & CC01 \\[4pt]
+        \textbf{Student:} & Duong Dang Khoa -- 2352551
+    \end{tabular}
+    
+    \vfill
+    {\small Ho Chi Minh City, November 2026\par}
+\end{titlepage}
+
+% Blank page after cover (matching HCMUT template)
+\newpage
+\thispagestyle{empty}
+\mbox{}
+\newpage
+
+% =========================================================================
+% FRONT MATTER: TABLE OF CONTENTS, LIST OF FIGURES, LIST OF TABLES
+% =========================================================================
+\setcounter{page}{3}
+\tableofcontents
+\vspace{0.5cm}
+\listoffigures
+\vspace{0.5cm}
+\listoftables
+
+\newpage
+\input{sections/sec1_problem.tex}
+\newpage
+\input{sections/sec2_functional.tex}
+\newpage
+\input{sections/sec3_nfr.tex}
+\newpage
+\input{sections/sec4_architecture.tex}
+\newpage
+\input{sections/sec5_data_api.tex}
+\newpage
+\input{sections/sec6_uiux.tex}
+\newpage
+\input{sections/sec7_traceability.tex}
+
+\end{document}
