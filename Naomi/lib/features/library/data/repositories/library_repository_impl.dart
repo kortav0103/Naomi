@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/bookmark.dart';
 import '../../domain/entities/downloaded_chapter.dart';
+import '../../domain/entities/reading_history_item.dart';
 import '../../domain/repositories/library_repository.dart';
 import '../datasources/library_local_data_source.dart';
 
@@ -110,6 +111,74 @@ class LibraryRepositoryImpl implements LibraryRepository {
         chapterId: chapterId,
         chapterNumber: chapterNumber,
         chapterTitle: chapterTitle,
+      );
+      return const Right(null);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ReadingHistoryItem>>> getReadingHistory() async {
+    try {
+      final history = await localDataSource.getReadingHistory();
+      return Right(history);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ReadingHistoryItem?>> getLastReadComic() async {
+    try {
+      final item = await localDataSource.getLastReadComic();
+      return Right(item);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> clearReadingHistory() async {
+    try {
+      await localDataSource.clearReadingHistory();
+      return const Right(null);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> saveReadingProgress({
+    required String comicId,
+    required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
+    required int lastPageRead,
+    required int totalPages,
+    required double readPercentage,
+    bool isCompleted = false,
+  }) async {
+    try {
+      await localDataSource.saveReadingProgress(
+        comicId: comicId,
+        chapterId: chapterId,
+        comicTitle: comicTitle,
+        coverUrl: coverUrl,
+        chapterNumber: chapterNumber,
+        lastPageRead: lastPageRead,
+        totalPages: totalPages,
+        readPercentage: readPercentage,
+        isCompleted: isCompleted,
       );
       return const Right(null);
     } on CacheException catch (e) {

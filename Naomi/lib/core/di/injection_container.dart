@@ -4,6 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import '../database/database_helper.dart';
 import '../network/dio_client.dart';
+import '../../features/auth/data/datasources/auth_local_data_source.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/comic/data/datasources/mangadex_remote_data_source.dart';
 import '../../features/comic/data/repositories/comic_repository_impl.dart';
 import '../../features/comic/domain/repositories/comic_repository.dart';
@@ -42,7 +46,18 @@ Future<void> init() async {
   sl.registerLazySingleton<Connectivity>(() => Connectivity());
   sl.registerLazySingleton<AmbientAudioService>(() => AmbientAudioService());
 
-  //! 2. Feature: Comic / Discover Module
+  //! 2. Feature: Authentication Module (FR-00, NFR-05, NFR-10)
+  sl.registerLazySingleton<AuthLocalDataSource>(
+    () => AuthLocalDataSourceImpl(secureStorage: sl()),
+  );
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(localDataSource: sl()),
+  );
+  sl.registerFactory(
+    () => AuthBloc(authRepository: sl()),
+  );
+
+  //! 3. Feature: Comic / Discover Module
   // Data sources
   sl.registerLazySingleton<MangaDexRemoteDataSource>(
     () => MangaDexRemoteDataSourceImpl(client: sl()),
@@ -62,7 +77,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetComicChapters(sl()));
   sl.registerLazySingleton(() => GetComicDetail(sl()));
 
-  // BLoCs (Factory để tạo instance mới mỗi khi màn hình mở ra)
+  // BLoCs
   sl.registerFactory(
     () => DiscoverBloc(
       getTrendingComics: sl(),
@@ -70,6 +85,7 @@ Future<void> init() async {
       repository: sl(),
     ),
   );
+
   sl.registerFactory(
     () => ComicDetailBloc(
       getComicDetail: sl(),
@@ -77,16 +93,19 @@ Future<void> init() async {
     ),
   );
 
-  //! 3. Feature: Reader Module
+  //! 4. Feature: Reader Module
   // Data sources
   sl.registerLazySingleton<ReaderRemoteDataSource>(
     () => ReaderRemoteDataSourceImpl(client: sl()),
   );
   sl.registerLazySingleton<ReaderLocalDataSource>(
-    () => ReaderLocalDataSourceImpl(dbHelper: sl()),
+    () => ReaderLocalDataSourceImpl(
+      dbHelper: sl(),
+      authLocalDataSource: sl(),
+    ),
   );
 
-  // Repositories
+  // Repository
   sl.registerLazySingleton<ReaderRepository>(
     () => ReaderRepositoryImpl(
       remoteDataSource: sl(),
@@ -108,12 +127,13 @@ Future<void> init() async {
     ),
   );
 
-  //! 4. Feature: Library Module
+  //! 5. Feature: Library Module
   // Data source
   sl.registerLazySingleton<LibraryLocalDataSource>(
     () => LibraryLocalDataSourceImpl(
       dbHelper: sl(),
       dio: sl<DioClient>().dio,
+      authLocalDataSource: sl(),
     ),
   );
 

@@ -6,6 +6,7 @@ import '../../../comic/presentation/bloc/discover/discover_bloc.dart';
 import '../../../comic/presentation/screens/discover_screen.dart';
 import '../../../library/presentation/screens/library_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
+import '../widgets/floating_mini_player.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -34,38 +35,45 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppColors.darkBorder, width: 1),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Mini Player nổi toàn cục phát nhạc nền Ambient (FR-05 & FR-09)
+          const FloatingMiniPlayer(),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: AppColors.darkBorder, width: 1),
+              ),
+            ),
+            child: NavigationBar(
+              selectedIndex: _currentIndex,
+              backgroundColor: AppColors.darkBackground,
+              indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+              elevation: 0,
+              onDestinationSelected: (index) {
+                setState(() => _currentIndex = index);
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.explore_outlined, color: AppColors.darkTextSecondary),
+                  selectedIcon: Icon(Icons.explore_rounded, color: AppColors.primaryLight),
+                  label: 'Khám phá',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.bookmark_border_rounded, color: AppColors.darkTextSecondary),
+                  selectedIcon: Icon(Icons.bookmark_rounded, color: AppColors.primaryLight),
+                  label: 'Tủ sách',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined, color: AppColors.darkTextSecondary),
+                  selectedIcon: Icon(Icons.settings_rounded, color: AppColors.primaryLight),
+                  label: 'Cài đặt',
+                ),
+              ],
+            ),
           ),
-        ),
-        child: NavigationBar(
-          selectedIndex: _currentIndex,
-          backgroundColor: AppColors.darkBackground,
-          indicatorColor: AppColors.primary.withValues(alpha: 0.2),
-          elevation: 0,
-          onDestinationSelected: (index) {
-            setState(() => _currentIndex = index);
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.explore_outlined, color: AppColors.darkTextSecondary),
-              selectedIcon: Icon(Icons.explore_rounded, color: AppColors.primaryLight),
-              label: 'Khám phá',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.bookmark_border_rounded, color: AppColors.darkTextSecondary),
-              selectedIcon: Icon(Icons.bookmark_rounded, color: AppColors.primaryLight),
-              label: 'Tủ sách',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.settings_outlined, color: AppColors.darkTextSecondary),
-              selectedIcon: Icon(Icons.settings_rounded, color: AppColors.primaryLight),
-              label: 'Cài đặt',
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

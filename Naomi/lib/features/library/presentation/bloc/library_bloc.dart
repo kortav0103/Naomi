@@ -17,27 +17,36 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     required this.getDownloadedChapters,
     required this.toggleBookmark,
     required this.repository,
-  }) : super(LibraryInitial()) {
+  }) : super(const LibraryInitial()) {
     on<LoadLibraryEvent>(_onLoadLibrary);
     on<ToggleBookmarkEvent>(_onToggleBookmark);
     on<DeleteDownloadedChapterEvent>(_onDeleteDownloadedChapter);
+    on<ClearReadingHistoryEvent>(_onClearReadingHistory);
   }
 
   Future<void> _onLoadLibrary(
     LoadLibraryEvent event,
     Emitter<LibraryState> emit,
   ) async {
-    emit(LibraryLoading());
+    emit(const LibraryLoading());
 
     final bookmarksResult = await getBookmarks();
     final downloadsResult = await getDownloadedChapters();
+    final historyResult = await repository.getReadingHistory();
 
     bookmarksResult.fold(
       (failure) => emit(LibraryError(failure.message)),
       (bookmarks) {
         downloadsResult.fold(
           (failure) => emit(LibraryError(failure.message)),
-          (downloads) => emit(LibraryLoaded(bookmarks: bookmarks, downloads: downloads)),
+          (downloads) {
+            final history = historyResult.getOrElse(() => []);
+            emit(LibraryLoaded(
+              bookmarks: bookmarks,
+              downloads: downloads,
+              history: history,
+            ));
+          },
         );
       },
     );
@@ -53,7 +62,6 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
       coverUrl: event.coverUrl,
       author: event.author,
     );
-    // Tự động tải lại danh sách tủ sách sau khi thả tim/bỏ tim
     add(const LoadLibraryEvent());
   }
 
@@ -62,7 +70,14 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
     Emitter<LibraryState> emit,
   ) async {
     await repository.deleteDownloadedChapter(chapterId: event.chapterId);
-    // Tải lại danh sách sau khi xóa
+    add(const LoadLibraryEvent());
+  }
+
+  Future<void> _onClearReadingHistory(
+    ClearReadingHistoryEvent event,
+    Emitter<LibraryState> emit,
+  ) async {
+    await repository.clearReadingHistory();
     add(const LoadLibraryEvent());
   }
 }

@@ -9,10 +9,15 @@ abstract class ReaderRepository {
     required String chapterId,
   });
 
-  /// Lưu tiến trình đọc dở vào CSDL cục bộ SQLite (FR-04)
+  /// Lưu tiến trình đọc dở vào CSDL cục bộ SQLite (FR-04, FR-08)
   Future<Either<Failure, void>> saveReadingProgress({
+    required String comicId,
     required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
     required int lastPageRead,
+    required int totalPages,
     required double readPercentage,
     bool isCompleted = false,
   });

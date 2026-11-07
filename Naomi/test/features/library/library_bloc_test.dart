@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:naomi/core/errors/failures.dart';
 import 'package:naomi/features/library/domain/entities/bookmark.dart';
 import 'package:naomi/features/library/domain/entities/downloaded_chapter.dart';
+import 'package:naomi/features/library/domain/entities/reading_history_item.dart';
 import 'package:naomi/features/library/domain/repositories/library_repository.dart';
 import 'package:naomi/features/library/domain/usecases/get_bookmarks.dart';
 import 'package:naomi/features/library/domain/usecases/get_downloaded_chapters.dart';
@@ -44,6 +45,28 @@ class FakeLibraryRepository implements LibraryRepository {
     required String chapterId,
     required String chapterNumber,
     required String chapterTitle,
+  }) async => const Right(null);
+
+  @override
+  Future<Either<Failure, List<ReadingHistoryItem>>> getReadingHistory() async => const Right([]);
+
+  @override
+  Future<Either<Failure, ReadingHistoryItem?>> getLastReadComic() async => const Right(null);
+
+  @override
+  Future<Either<Failure, void>> clearReadingHistory() async => const Right(null);
+
+  @override
+  Future<Either<Failure, void>> saveReadingProgress({
+    required String comicId,
+    required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
+    required int lastPageRead,
+    required int totalPages,
+    required double readPercentage,
+    bool isCompleted = false,
   }) async => const Right(null);
 }
 

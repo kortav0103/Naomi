@@ -23,8 +23,13 @@ class FakeReaderRepository implements ReaderRepository {
 
   @override
   Future<Either<Failure, void>> saveReadingProgress({
+    required String comicId,
     required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
     required int lastPageRead,
+    required int totalPages,
     required double readPercentage,
     bool isCompleted = false,
   }) async {
@@ -52,8 +57,13 @@ class FakeSuccessSaveReadingProgress extends SaveReadingProgress {
 
   @override
   Future<Either<Failure, void>> call({
+    required String comicId,
     required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
     required int lastPageRead,
+    required int totalPages,
     required double readPercentage,
     bool isCompleted = false,
   }) async {
@@ -111,7 +121,7 @@ void main() {
 
       expectLater(bloc.stream, emitsInOrder(expectedStates));
 
-      bloc.add(const LoadChapterPagesEvent('ch-123'));
+      bloc.add(const LoadChapterPagesEvent(chapterId: 'ch-123'));
     });
 
     test('Cập nhật currentPage khi phát sự kiện ChangePageEvent', () async {

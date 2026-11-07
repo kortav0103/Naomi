@@ -55,15 +55,25 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
   @override
   Future<Either<Failure, void>> saveReadingProgress({
+    required String comicId,
     required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
     required int lastPageRead,
+    required int totalPages,
     required double readPercentage,
     bool isCompleted = false,
   }) async {
     try {
       await localDataSource.saveProgress(
+        comicId: comicId,
         chapterId: chapterId,
+        comicTitle: comicTitle,
+        coverUrl: coverUrl,
+        chapterNumber: chapterNumber,
         lastPageRead: lastPageRead,
+        totalPages: totalPages,
         readPercentage: readPercentage,
         isCompleted: isCompleted,
       );

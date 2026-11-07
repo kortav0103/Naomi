@@ -1,12 +1,18 @@
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../auth/data/datasources/auth_local_data_source.dart';
 
 abstract class ReaderLocalDataSource {
-  /// Lưu tiến trình đọc dở vào bảng reading_history của SQLite
+  /// Lưu tiến trình đọc dở vào bảng reading_history của SQLite (FR-04, FR-08)
   Future<void> saveProgress({
+    required String comicId,
     required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
     required int lastPageRead,
+    required int totalPages,
     required double readPercentage,
     bool isCompleted = false,
   });
@@ -20,27 +26,51 @@ abstract class ReaderLocalDataSource {
 
 class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
   final DatabaseHelper dbHelper;
+  final AuthLocalDataSource authLocalDataSource;
 
-  ReaderLocalDataSourceImpl({required this.dbHelper});
+  ReaderLocalDataSourceImpl({
+    required this.dbHelper,
+    required this.authLocalDataSource,
+  });
+
+  Future<String> _getActiveUserId() async {
+    try {
+      final user = await authLocalDataSource.getCurrentUser();
+      return user?.id ?? 'guest_default';
+    } catch (_) {
+      return 'guest_default';
+    }
+  }
 
   @override
   Future<void> saveProgress({
+    required String comicId,
     required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
     required int lastPageRead,
+    required int totalPages,
     required double readPercentage,
     bool isCompleted = false,
   }) async {
     try {
       final db = await dbHelper.database;
+      final userId = await _getActiveUserId();
       final now = DateTime.now().toIso8601String();
 
-      // Sử dụng ConflictAlgorithm.replace để cập nhật nếu đã có bản ghi cũ
+      // Sử dụng ConflictAlgorithm.replace để cập nhật nếu đã có bản ghi cũ cho (user_id, comic_id)
       await db.insert(
         'reading_history',
         {
-          'user_id': 'default_reader', // ID người dùng cục bộ mặc định
+          'user_id': userId,
+          'comic_id': comicId,
           'chapter_id': chapterId,
+          'comic_title': comicTitle,
+          'cover_url': coverUrl,
+          'chapter_number': chapterNumber,
           'last_page_read': lastPageRead,
+          'total_pages': totalPages,
           'read_percentage': readPercentage,
           'is_completed': isCompleted ? 1 : 0,
           'updated_at': now,
@@ -56,11 +86,12 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
   Future<int> getSavedProgress(String chapterId) async {
     try {
       final db = await dbHelper.database;
+      final userId = await _getActiveUserId();
       final List<Map<String, dynamic>> results = await db.query(
         'reading_history',
         columns: ['last_page_read'],
-        where: 'chapter_id = ?',
-        whereArgs: [chapterId],
+        where: 'user_id = ? AND chapter_id = ?',
+        whereArgs: [userId, chapterId],
       );
 
       if (results.isNotEmpty) {

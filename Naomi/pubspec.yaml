@@ -58,6 +58,7 @@ dependencies:
   just_audio: ^0.9.46
   audio_session: ^0.1.25
   sqflite_common_ffi: ^2.4.5
+  just_audio_windows: ^0.2.3
 
 dev_dependencies:
   flutter_test:

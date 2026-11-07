@@ -2,8 +2,9 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/bookmark.dart';
 import '../entities/downloaded_chapter.dart';
+import '../entities/reading_history_item.dart';
 
-/// Hợp đồng trừu tượng cho các nghiệp vụ Tủ sách cá nhân
+/// Hợp đồng trừu tượng cho các nghiệp vụ Tủ sách cá nhân & Lịch sử đọc dở (FR-04, FR-06, FR-07)
 abstract class LibraryRepository {
   /// Lấy danh sách truyện Yêu thích từ CSDL SQLite
   Future<Either<Failure, List<Bookmark>>> getBookmarks();
@@ -43,5 +44,27 @@ abstract class LibraryRepository {
     required String chapterId,
     required String chapterNumber,
     required String chapterTitle,
+  });
+
+  /// Lấy danh sách lịch sử các truyện đang đọc dở (FR-04)
+  Future<Either<Failure, List<ReadingHistoryItem>>> getReadingHistory();
+
+  /// Lấy bộ truyện được đọc gần đây nhất cho Kệ "Đọc tiếp" trên Trang chủ (FR-08)
+  Future<Either<Failure, ReadingHistoryItem?>> getLastReadComic();
+
+  /// Xóa toàn bộ lịch sử đọc
+  Future<Either<Failure, void>> clearReadingHistory();
+
+  /// Lưu tiến trình đọc dở không bị chặn bởi khóa ngoại
+  Future<Either<Failure, void>> saveReadingProgress({
+    required String comicId,
+    required String chapterId,
+    required String comicTitle,
+    String? coverUrl,
+    required String chapterNumber,
+    required int lastPageRead,
+    required int totalPages,
+    required double readPercentage,
+    bool isCompleted = false,
   });
 }

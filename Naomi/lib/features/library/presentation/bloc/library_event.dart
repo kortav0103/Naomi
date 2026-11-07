@@ -7,7 +7,7 @@ abstract class LibraryEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Nạp dữ liệu toàn bộ Tủ sách (cả tab Yêu thích và tab Tải xuống)
+/// Nạp dữ liệu toàn bộ Tủ sách (Yêu thích, Lịch sử đọc, Đã tải xuống)
 class LoadLibraryEvent extends LibraryEvent {
   const LoadLibraryEvent();
 }
@@ -38,4 +38,9 @@ class DeleteDownloadedChapterEvent extends LibraryEvent {
 
   @override
   List<Object?> get props => [chapterId];
+}
+
+/// Xóa toàn bộ lịch sử đọc của người dùng hiện tại
+class ClearReadingHistoryEvent extends LibraryEvent {
+  const ClearReadingHistoryEvent();
 }
