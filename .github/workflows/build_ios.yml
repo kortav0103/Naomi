@@ -1,0 +1,62 @@
+name: Build iOS (Simulator & IPA)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-ios:
+    name: Build iOS Package
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd Naomi
+          flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd Naomi/ios
+          pod install
+
+      - name: Build iOS Simulator App (Web Browser Testing)
+        run: |
+          cd Naomi
+          flutter build ios --simulator
+          cd build/ios/iphonesimulator
+          zip -r Naomi-Simulator.zip Runner.app
+          mv Naomi-Simulator.zip ../../../
+
+      - name: Build iOS IPA (For Sideloadly / AltStore on Windows)
+        run: |
+          cd Naomi
+          flutter build ios --release --no-codesign
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r Naomi-Release.ipa Payload
+          mv Naomi-Release.ipa ../../../
+
+      - name: Upload iOS Simulator Build (for Appetize.io)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Naomi-iOS-Simulator
+          path: Naomi-Simulator.zip
+
+      - name: Upload iOS IPA (for Sideloadly on Windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Naomi-iOS-Release-IPA
+          path: Naomi-Release.ipa
