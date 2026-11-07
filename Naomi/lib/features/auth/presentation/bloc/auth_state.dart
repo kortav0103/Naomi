@@ -29,6 +29,15 @@ class Unauthenticated extends AuthState {
   const Unauthenticated();
 }
 
+class PasswordResetSuccess extends AuthState {
+  final String message;
+
+  const PasswordResetSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class AuthError extends AuthState {
   final String message;
 

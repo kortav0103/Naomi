@@ -52,3 +52,16 @@ class UpdateProfileEvent extends AuthEvent {
   @override
   List<Object?> get props => [displayName];
 }
+
+class ResetPasswordSubmittedEvent extends AuthEvent {
+  final String email;
+  final String newPassword;
+
+  const ResetPasswordSubmittedEvent({
+    required this.email,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [email, newPassword];
+}

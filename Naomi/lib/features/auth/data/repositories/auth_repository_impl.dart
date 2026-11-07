@@ -88,4 +88,19 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(AuthFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      await localDataSource.resetPassword(email: email, newPassword: newPassword);
+      return const Right(null);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
+  }
 }

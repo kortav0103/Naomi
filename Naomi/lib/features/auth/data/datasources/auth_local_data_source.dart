@@ -15,6 +15,7 @@ abstract class AuthLocalDataSource {
   });
   Future<UserModel> createGuestSession();
   Future<UserModel> updateProfile({required String displayName});
+  Future<void> resetPassword({required String email, required String newPassword});
 }
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
@@ -150,7 +151,6 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<UserModel> createGuestSession() async {
     try {
-      // Nếu đã có guest session từ trước thì tái sử dụng
       final existingUser = await getCurrentUser();
       if (existingUser != null && existingUser.isGuest) {
         return existingUser;
@@ -190,7 +190,6 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
 
       await saveCurrentUser(updated);
 
-      // Nếu là tài khoản thành viên thì cập nhật trong danh sách tài khoản đã lưu
       if (!current.isGuest) {
         final accountsStr = await secureStorage.read(key: _keyRegisteredAccounts);
         if (accountsStr != null) {
@@ -207,6 +206,55 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
       return updated;
     } catch (e) {
       throw AuthException('Không thể cập nhật hồ sơ: $e');
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
+      if (normalizedEmail.isEmpty || !normalizedEmail.contains('@')) {
+        throw const AuthException('Địa chỉ Email không hợp lệ!');
+      }
+
+      final accountsStr = await secureStorage.read(key: _keyRegisteredAccounts);
+      final Map<String, dynamic> accounts = accountsStr != null
+          ? jsonDecode(accountsStr) as Map<String, dynamic>
+          : {};
+
+      if (accounts.containsKey(normalizedEmail)) {
+        final acc = accounts[normalizedEmail] as Map<String, dynamic>;
+        acc['password'] = newPassword;
+        await secureStorage.write(
+          key: _keyRegisteredAccounts,
+          value: jsonEncode(accounts),
+        );
+      } else if (normalizedEmail == 'reader@naomi.app') {
+        final defaultUser = UserModel(
+          id: 'user_default_reader',
+          email: 'reader@naomi.app',
+          displayName: 'Độc giả Naomi',
+          isGuest: false,
+          createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        );
+        accounts[normalizedEmail] = {
+          'password': newPassword,
+          'profile': defaultUser.toJson(),
+        };
+        await secureStorage.write(
+          key: _keyRegisteredAccounts,
+          value: jsonEncode(accounts),
+        );
+      } else {
+        throw const AuthException('Không tìm thấy tài khoản gắn với Email này!');
+      }
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      throw AuthException('Lỗi đặt lại mật khẩu: $e');
     }
   }
 }

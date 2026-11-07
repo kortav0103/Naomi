@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../library/domain/entities/reading_history_item.dart';
 import '../../../library/domain/repositories/library_repository.dart';
 import '../../../library/domain/usecases/check_is_bookmarked.dart';
@@ -42,15 +43,18 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
   bool _isBookmarked = false;
   final Set<String> _downloadedChapterIds = {};
   final Set<String> _downloadingChapterIds = {};
+  final Map<String, double> _downloadProgress = {};
+  final Map<String, String> _downloadDetailText = {};
   ReadingHistoryItem? _lastReadHistory;
 
   bool _isDescriptionExpanded = false;
-  String _selectedLanguage = 'all'; // 'all', 'vi', 'en'
+  late String _selectedLanguage; // 'all', 'vi', 'en'
   bool _isAscending = true; // true = 1 -> N, false = N -> 1
 
   @override
   void initState() {
     super.initState();
+    _selectedLanguage = sl<ThemeController>().preferredLanguage;
     _checkInitialStatus();
   }
 
@@ -117,10 +121,15 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
   Future<void> _downloadChapter(Comic comic, Chapter chapter) async {
     if (_downloadingChapterIds.contains(chapter.id) || _downloadedChapterIds.contains(chapter.id)) return;
 
-    setState(() => _downloadingChapterIds.add(chapter.id));
+    setState(() {
+      _downloadingChapterIds.add(chapter.id);
+      _downloadProgress[chapter.id] = 0.0;
+      _downloadDetailText[chapter.id] = 'Đang khởi tạo...';
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Bắt đầu tải Chương ${chapter.chapterNumber} ngoại tuyến...'),
+        content: Text('Đang tải Chương ${chapter.chapterNumber} để đọc ngoại tuyến (FR-06)...'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -134,11 +143,23 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
         chapterId: chapter.id,
         chapterNumber: chapter.chapterNumber,
         chapterTitle: chapter.title,
+        onProgress: (downloaded, total) {
+          if (mounted && total > 0) {
+            setState(() {
+              _downloadProgress[chapter.id] = downloaded / total;
+              _downloadDetailText[chapter.id] = '$downloaded/$total trang (${((downloaded / total) * 100).toInt()}%)';
+            });
+          }
+        },
       ),
     );
 
     if (mounted) {
-      setState(() => _downloadingChapterIds.remove(chapter.id));
+      setState(() {
+        _downloadingChapterIds.remove(chapter.id);
+        _downloadProgress.remove(chapter.id);
+        _downloadDetailText.remove(chapter.id);
+      });
       result.fold(
         (failure) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +170,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
           setState(() => _downloadedChapterIds.add(chapter.id));
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Đã tải xong Chương ${chapter.chapterNumber}! Có thể đọc offline trong Tủ sách.'),
+              content: Text('Đã tải xong Chương ${chapter.chapterNumber}! Có thể đọc 100% Offline trong Tủ sách.'),
               backgroundColor: AppColors.success,
               duration: const Duration(seconds: 3),
             ),
@@ -166,8 +187,23 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
       filtered = rawChapters.where((c) => c.translatedLanguage.toLowerCase() == _selectedLanguage).toList();
     }
 
-    // 2. Sắp xếp tăng dần hoặc giảm dần
-    final sorted = List<Chapter>.from(filtered);
+    // 2. Khử trùng lặp thông minh theo số chương (Ưu tiên giữ bản Tiếng Việt 'vi' trước, sau đó đến 'en')
+    final Map<String, Chapter> uniqueByNumber = {};
+    for (final ch in filtered) {
+      final key = ch.chapterNumber.trim();
+      if (!uniqueByNumber.containsKey(key)) {
+        uniqueByNumber[key] = ch;
+      } else {
+        final existing = uniqueByNumber[key]!;
+        if (existing.translatedLanguage.toLowerCase() != 'vi' &&
+            ch.translatedLanguage.toLowerCase() == 'vi') {
+          uniqueByNumber[key] = ch;
+        }
+      }
+    }
+
+    // 3. Sắp xếp tăng dần hoặc giảm dần
+    final sorted = uniqueByNumber.values.toList();
     sorted.sort((a, b) {
       final numA = double.tryParse(a.chapterNumber) ?? 0.0;
       final numB = double.tryParse(b.chapterNumber) ?? 0.0;
@@ -191,12 +227,12 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
           comicId: comic.id,
           comicTitle: comic.title,
           coverUrl: comic.coverUrl,
+          comicGenres: comic.genres,
           chaptersList: chapters,
           currentChapterIndex: initialIndex,
         ),
       ),
     ).then((_) {
-      // Khi quay lại, làm mới tiến trình đọc dở
       _checkInitialStatus();
     });
   }
@@ -215,10 +251,16 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
             final comic = state.comic;
             final processedChapters = _processChapters(state.chapters);
 
+            // Tìm chương đầu tiên (nhỏ nhất) và chương mới nhất (lớn nhất)
+            final firstChapterIndex = _isAscending ? 0 : (processedChapters.length - 1);
+            final latestChapterIndex = _isAscending ? (processedChapters.length - 1) : 0;
+
             // Tìm chương phù hợp để tiếp tục đọc
-            int resumeIndex = 0;
+            int resumeIndex = firstChapterIndex.clamp(0, processedChapters.isEmpty ? 0 : processedChapters.length - 1);
             if (_lastReadHistory != null) {
-              final idx = processedChapters.indexWhere((c) => c.id == _lastReadHistory!.chapterId);
+              final idx = processedChapters.indexWhere(
+                (c) => c.id == _lastReadHistory!.chapterId || c.chapterNumber == _lastReadHistory!.chapterNumber,
+              );
               if (idx != -1) resumeIndex = idx;
             }
 
@@ -353,13 +395,73 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                       ),
                     ),
 
-                    // 2. Thể loại & Tóm tắt nội dung
+                    // 2. Cụm 4 Nút Hành Động Nhanh (S04 / UC-02 / FR-10) + Thể loại + Tóm tắt
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Cụm 4 nút chuẩn đặc tả S04: Read First | Read Latest | Favorite | Download
+                            if (processedChapters.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.darkTextPrimary,
+                                        side: const BorderSide(color: AppColors.darkBorder),
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      icon: const Icon(Icons.first_page_rounded, size: 18, color: AppColors.primaryLight),
+                                      label: const Text('Đọc từ đầu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                      onPressed: () => _openReader(comic, processedChapters, firstChapterIndex),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.darkTextPrimary,
+                                        side: const BorderSide(color: AppColors.darkBorder),
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      icon: const Icon(Icons.new_releases_outlined, size: 16, color: AppColors.primaryLight),
+                                      label: const Text('Chương mới nhất', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                      onPressed: () => _openReader(comic, processedChapters, latestChapterIndex),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton.outlined(
+                                    tooltip: _isBookmarked ? 'Bỏ Yêu thích' : 'Lưu Yêu thích (FR-07)',
+                                    style: IconButton.styleFrom(
+                                      side: BorderSide(color: _isBookmarked ? AppColors.error : AppColors.darkBorder),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    icon: Icon(
+                                      _isBookmarked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                      color: _isBookmarked ? AppColors.error : AppColors.darkTextSecondary,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _toggleBookmark(comic),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  IconButton.outlined(
+                                    tooltip: 'Tải nhanh chương đầu ngoại tuyến (FR-06)',
+                                    style: IconButton.styleFrom(
+                                      side: const BorderSide(color: AppColors.darkBorder),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    icon: const Icon(Icons.download_for_offline_outlined, color: AppColors.primaryLight, size: 20),
+                                    onPressed: () => _downloadChapter(comic, processedChapters[resumeIndex]),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                            ],
+
                             // Danh sách Genre Chips
                             if (comic.genres.isNotEmpty)
                               Wrap(
@@ -435,24 +537,19 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '(${processedChapters.length})',
+                                      '(${processedChapters.length} chương)',
                                       style: const TextStyle(fontSize: 12, color: AppColors.darkTextMuted),
                                     ),
                                   ],
                                 ),
-                                Row(
-                                  children: [
-                                    // Nút đảo chiều sắp xếp chương
-                                    IconButton(
-                                      tooltip: _isAscending ? 'Sắp xếp: 1 -> N (Nhỏ đến lớn)' : 'Sắp xếp: N -> 1 (Mới nhất trước)',
-                                      icon: Icon(
-                                        _isAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                                        color: AppColors.primaryLight,
-                                        size: 20,
-                                      ),
-                                      onPressed: () => setState(() => _isAscending = !_isAscending),
-                                    ),
-                                  ],
+                                IconButton(
+                                  tooltip: _isAscending ? 'Sắp xếp: 1 -> N (Nhỏ đến lớn)' : 'Sắp xếp: N -> 1 (Mới nhất trước)',
+                                  icon: Icon(
+                                    _isAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                    color: AppColors.primaryLight,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => setState(() => _isAscending = !_isAscending),
                                 ),
                               ],
                             ),
@@ -464,7 +561,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                               child: Row(
                                 children: [
                                   ChoiceChip(
-                                    label: const Text('Tất cả ngôn ngữ'),
+                                    label: const Text('Tất cả (Ưu tiên VI)'),
                                     selected: _selectedLanguage == 'all',
                                     selectedColor: AppColors.primary,
                                     backgroundColor: AppColors.darkSurface,
@@ -507,7 +604,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                       ),
                     ),
 
-                    // 3. Danh sách các chương (Chapters List)
+                    // 3. Danh sách các chương (Chapters List) kèm thanh tiến độ tải S11
                     if (processedChapters.isEmpty)
                       const SliverToBoxAdapter(
                         child: Padding(
@@ -527,7 +624,10 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                             final chapter = processedChapters[index];
                             final isDownloading = _downloadingChapterIds.contains(chapter.id);
                             final isDownloaded = _downloadedChapterIds.contains(chapter.id);
-                            final isLastRead = _lastReadHistory?.chapterId == chapter.id;
+                            final isLastRead = _lastReadHistory?.chapterId == chapter.id ||
+                                _lastReadHistory?.chapterNumber == chapter.chapterNumber;
+                            final progress = _downloadProgress[chapter.id] ?? 0.0;
+                            final progressText = _downloadDetailText[chapter.id] ?? '';
 
                             return Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -568,21 +668,57 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                         ),
                                     ],
                                   ),
-                                  subtitle: Text(
-                                    'Nhóm dịch: ${chapter.scanlationGroup} • [${chapter.translatedLanguage.toUpperCase()}]',
-                                    style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
-                                  ),
+                                  subtitle: isDownloading
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(top: 6),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Đang tải: $progressText',
+                                                style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(3),
+                                                child: LinearProgressIndicator(
+                                                  value: progress > 0 ? progress : null,
+                                                  backgroundColor: AppColors.darkBorder,
+                                                  color: AppColors.success,
+                                                  minHeight: 4,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : Text(
+                                          'Nhóm dịch: ${chapter.scanlationGroup} • [${chapter.translatedLanguage.toUpperCase()}]',
+                                          style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
+                                        ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Nút tải ngoại tuyến (FR-06)
+                                      // Nút tải ngoại tuyến (FR-06 / S11)
                                       if (isDownloading)
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 10),
-                                          child: SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              SizedBox(
+                                                width: 26,
+                                                height: 26,
+                                                child: CircularProgressIndicator(
+                                                  value: progress > 0 ? progress : null,
+                                                  strokeWidth: 2.5,
+                                                  color: AppColors.success,
+                                                ),
+                                              ),
+                                              Text(
+                                                '${(progress * 100).toInt()}%',
+                                                style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.success),
+                                              ),
+                                            ],
                                           ),
                                         )
                                       else if (isDownloaded)
@@ -661,20 +797,44 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
               ],
             );
           } else if (state is ComicDetailError) {
+            // Trạng thái mất mạng S09 (FR-13)
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline_rounded, size: 60, color: AppColors.error),
+                    const Icon(Icons.cloud_off_rounded, size: 60, color: AppColors.warning),
                     const SizedBox(height: 16),
-                    Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.darkTextPrimary)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      onPressed: () => context.read<ComicDetailBloc>().add(LoadComicDetailEvent(widget.comicId)),
-                      child: const Text('Thử lại', style: TextStyle(color: Colors.white)),
+                    const Text(
+                      'Oops! Không thể tải thông tin truyện',
+                      style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.darkTextSecondary)),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.darkTextPrimary,
+                            side: const BorderSide(color: AppColors.darkBorder),
+                          ),
+                          onPressed: () => context.read<ComicDetailBloc>().add(LoadComicDetailEvent(widget.comicId)),
+                          child: const Text('Thử lại'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          icon: const Icon(Icons.offline_pin_rounded, color: Colors.white, size: 18),
+                          label: const Text('Mở Kho Ngoại Tuyến', style: TextStyle(color: Colors.white)),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            sl<ThemeController>().navigateToOfflineLibrary();
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

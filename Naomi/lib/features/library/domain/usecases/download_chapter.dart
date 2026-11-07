@@ -10,6 +10,7 @@ class DownloadChapterParams {
   final String chapterId;
   final String chapterNumber;
   final String chapterTitle;
+  final void Function(int downloaded, int total)? onProgress;
 
   const DownloadChapterParams({
     required this.comicId,
@@ -19,10 +20,11 @@ class DownloadChapterParams {
     required this.chapterId,
     required this.chapterNumber,
     required this.chapterTitle,
+    this.onProgress,
   });
 }
 
-/// UseCase thực hiện tải toàn bộ trang ảnh của chương truyện về máy để đọc offline (FR-06)
+/// UseCase thực hiện tải toàn bộ trang ảnh của chương truyện về máy để đọc offline (FR-06 & S11)
 class DownloadChapter {
   final LibraryRepository repository;
 
@@ -37,6 +39,7 @@ class DownloadChapter {
       chapterId: params.chapterId,
       chapterNumber: params.chapterNumber,
       chapterTitle: params.chapterTitle,
+      onProgress: params.onProgress,
     );
   }
 }

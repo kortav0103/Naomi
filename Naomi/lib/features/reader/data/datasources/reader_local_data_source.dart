@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -28,6 +29,9 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
   final DatabaseHelper dbHelper;
   final AuthLocalDataSource authLocalDataSource;
 
+  /// Bộ nhớ đệm In-Memory dự phòng khi chạy trên Trình duyệt Web (kIsWeb)
+  static final Map<String, int> webSavedProgress = {};
+
   ReaderLocalDataSourceImpl({
     required this.dbHelper,
     required this.authLocalDataSource,
@@ -54,6 +58,11 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
     required double readPercentage,
     bool isCompleted = false,
   }) async {
+    if (kIsWeb) {
+      webSavedProgress[chapterId] = lastPageRead;
+      return;
+    }
+
     try {
       final db = await dbHelper.database;
       final userId = await _getActiveUserId();
@@ -84,6 +93,10 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
 
   @override
   Future<int> getSavedProgress(String chapterId) async {
+    if (kIsWeb) {
+      return webSavedProgress[chapterId] ?? 1;
+    }
+
     try {
       final db = await dbHelper.database;
       final userId = await _getActiveUserId();
@@ -105,6 +118,8 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
 
   @override
   Future<List<String>?> getOfflinePages(String chapterId) async {
+    if (kIsWeb) return null;
+
     try {
       final db = await dbHelper.database;
       final List<Map<String, dynamic>> results = await db.query(

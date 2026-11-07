@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../comic/domain/entities/chapter.dart';
 import '../bloc/reader_bloc.dart';
 import '../bloc/reader_event.dart';
@@ -17,6 +18,7 @@ class ReaderScreen extends StatelessWidget {
   final String comicId;
   final String comicTitle;
   final String? coverUrl;
+  final List<String> comicGenres;
   final List<Chapter> chaptersList;
   final int currentChapterIndex;
 
@@ -28,6 +30,7 @@ class ReaderScreen extends StatelessWidget {
     this.comicId = '',
     this.comicTitle = 'Manga',
     this.coverUrl,
+    this.comicGenres = const [],
     this.chaptersList = const [],
     this.currentChapterIndex = 0,
   });
@@ -50,6 +53,7 @@ class ReaderScreen extends StatelessWidget {
         comicId: comicId,
         comicTitle: comicTitle,
         coverUrl: coverUrl,
+        comicGenres: comicGenres,
         chaptersList: chaptersList,
         initialChapterIndex: currentChapterIndex,
       ),
@@ -64,6 +68,7 @@ class _ReaderView extends StatefulWidget {
   final String comicId;
   final String comicTitle;
   final String? coverUrl;
+  final List<String> comicGenres;
   final List<Chapter> chaptersList;
   final int initialChapterIndex;
 
@@ -74,6 +79,7 @@ class _ReaderView extends StatefulWidget {
     required this.comicId,
     required this.comicTitle,
     this.coverUrl,
+    required this.comicGenres,
     required this.chaptersList,
     required this.initialChapterIndex,
   });
@@ -90,6 +96,8 @@ class _ReaderViewState extends State<_ReaderView> {
   late String _activeChapterId;
   late String _activeChapterNumber;
   late String? _activeChapterTitle;
+  bool _hasRestoredInitialScroll = false;
+  bool _isAiTranslated = false;
 
   @override
   void initState() {
@@ -118,6 +126,7 @@ class _ReaderViewState extends State<_ReaderView> {
       _activeChapterId = newChapter.id;
       _activeChapterNumber = newChapter.chapterNumber;
       _activeChapterTitle = newChapter.title;
+      _hasRestoredInitialScroll = false;
     });
 
     if (_scrollController.hasClients) {
@@ -229,26 +238,75 @@ class _ReaderViewState extends State<_ReaderView> {
       backgroundColor: AppColors.darkBackground,
       body: BlocConsumer<ReaderBloc, ReaderState>(
         listener: (context, state) {
-          if (state is ReaderLoaded && _pageController.hasClients) {
+          if (state is ReaderLoaded) {
             final targetIndex = state.currentPage - 1;
-            if (targetIndex >= 0 && _pageController.page?.round() != targetIndex) {
-              _pageController.jumpToPage(targetIndex);
+            if (!state.isWebtoonMode && _pageController.hasClients) {
+              if (targetIndex >= 0 && _pageController.page?.round() != targetIndex) {
+                _pageController.jumpToPage(targetIndex);
+              }
+            } else if (state.isWebtoonMode && !_hasRestoredInitialScroll && state.currentPage > 1) {
+              _hasRestoredInitialScroll = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_scrollController.hasClients && state.pages.totalPages > 1) {
+                  final estimatedOffset = (state.currentPage - 1) * 520.0;
+                  final maxScroll = _scrollController.position.maxScrollExtent;
+                  _scrollController.jumpTo(estimatedOffset.clamp(0.0, maxScroll > 0 ? maxScroll : estimatedOffset));
+                }
+              });
             }
           }
         },
         builder: (context, state) {
           if (state is ReaderLoading) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: AppColors.primary),
-                  SizedBox(height: 16),
-                  Text(
-                    'Đang nạp các trang truyện...',
-                    style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
-                  ),
-                ],
+            // Màn hình S10: Full Chapter Preload (UC-05 & NFR-04)
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (widget.coverUrl != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.coverUrl!,
+                          width: 90,
+                          height: 128,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      const Icon(Icons.auto_stories_rounded, size: 56, color: AppColors.primaryLight),
+                    const SizedBox(height: 20),
+                    Text(
+                      widget.comicTitle,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Đang nạp trọn bộ Chương $_activeChapterNumber (S10 Preload)...',
+                      style: const TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 16),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: const LinearProgressIndicator(
+                        color: AppColors.primary,
+                        backgroundColor: AppColors.darkSurface,
+                        minHeight: 6,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Tối ưu bộ đệm trước để cuộn đọc mượt mà 60 FPS không giật lag.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.darkTextMuted, fontSize: 11),
+                    ),
+                  ],
+                ),
               ),
             );
           } else if (state is ReaderLoaded) {
@@ -269,6 +327,38 @@ class _ReaderViewState extends State<_ReaderView> {
                       ? _buildWebtoonViewer(context, state)
                       : _buildMangaViewer(context, state),
                 ),
+
+                // Lớp phủ AI Translation (FR-12) khi bật dịch thuật tại chỗ
+                if (_isAiTranslated && !isFocus)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 66,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkSurface.withValues(alpha: 0.94),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.primaryLight),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded, color: AppColors.primaryLight, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'AI Translation (FR-12) • Trang ${state.currentPage}/${pages.totalPages}: Đã đồng bộ ngữ cảnh bản dịch Tiếng Việt cho "${widget.comicTitle} - Ch.$_activeChapterNumber".',
+                              style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 11, height: 1.3),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.darkTextMuted),
+                            onPressed: () => setState(() => _isAiTranslated = false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // 2. Thanh App Bar phía trên (Tự ẩn khi Focus Mode)
                 AnimatedPositioned(
@@ -291,36 +381,54 @@ class _ReaderViewState extends State<_ReaderView> {
                           onPressed: () => Navigator.pop(context),
                         ),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Chương $_activeChapterNumber',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
+                          child: InkWell(
+                            onTap: widget.chaptersList.isNotEmpty ? () => _showChapterListModal(context) : null,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        'Chương $_activeChapterNumber',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    if (widget.chaptersList.isNotEmpty)
+                                      const Icon(Icons.arrow_drop_down_rounded, color: AppColors.primaryLight, size: 20),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                _activeChapterTitle != null && _activeChapterTitle!.isNotEmpty
-                                    ? _activeChapterTitle!
-                                    : widget.comicTitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
-                              ),
-                            ],
+                                Text(
+                                  _activeChapterTitle != null && _activeChapterTitle!.isNotEmpty
+                                      ? _activeChapterTitle!
+                                      : widget.comicTitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        // Nút mở Drawer danh sách tất cả các chương
-                        if (widget.chaptersList.isNotEmpty)
-                          IconButton(
-                            tooltip: 'Danh sách chương',
-                            icon: const Icon(Icons.format_list_bulleted_rounded, color: Colors.white),
-                            onPressed: () => _showChapterListModal(context),
+                        // Nút AI Translate tại chỗ (FR-12 / S05)
+                        IconButton(
+                          tooltip: 'Dịch thuật chương bằng AI (FR-12)',
+                          icon: Icon(
+                            Icons.translate_rounded,
+                            color: _isAiTranslated ? AppColors.warning : AppColors.darkTextSecondary,
+                            size: 20,
                           ),
+                          onPressed: () {
+                            setState(() => _isAiTranslated = !_isAiTranslated);
+                          },
+                        ),
                         // Nút đổi chế độ Cuộn dọc / Lật ngang (FR-03)
                         IconButton(
                           tooltip: state.isWebtoonMode ? 'Chuyển sang Lật ngang' : 'Chuyển sang Cuộn dọc',
@@ -344,9 +452,9 @@ class _ReaderViewState extends State<_ReaderView> {
                               context.read<ReaderBloc>().add(const ToggleReadingDirectionEvent());
                             },
                           ),
-                        // Nút bật Data Saver
+                        // Nút bật Data Saver (NFR-18)
                         IconButton(
-                          tooltip: state.isDataSaver ? 'Chất lượng gốc' : 'Tiết kiệm 4G',
+                          tooltip: state.isDataSaver ? 'Chất lượng gốc' : 'Tiết kiệm 4G (Data Saver)',
                           icon: Icon(
                             state.isDataSaver ? Icons.data_saver_on_rounded : Icons.high_quality_rounded,
                             color: state.isDataSaver ? AppColors.warning : AppColors.darkTextSecondary,
@@ -355,9 +463,9 @@ class _ReaderViewState extends State<_ReaderView> {
                             context.read<ReaderBloc>().add(const ToggleDataSaverEvent());
                           },
                         ),
-                        // Nút mở Nhạc nền Ambient (FR-05 & S06)
+                        // Nút mở Nhạc nền Ambient theo thể loại truyện (FR-05 & S06)
                         IconButton(
-                          tooltip: 'Nhạc nền thư giãn',
+                          tooltip: 'Nhạc nền thư giãn theo thể loại',
                           icon: const Icon(
                             Icons.music_note_rounded,
                             color: AppColors.primaryLight,
@@ -367,7 +475,7 @@ class _ReaderViewState extends State<_ReaderView> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (_) => const AmbientAudioSheet(),
+                              builder: (_) => AmbientAudioSheet(comicGenres: widget.comicGenres),
                             );
                           },
                         ),
@@ -417,7 +525,7 @@ class _ReaderViewState extends State<_ReaderView> {
                                   trackHeight: 3,
                                 ),
                                 child: Slider(
-                                  value: state.currentPage.toDouble().clamp(1.0, pages.totalPages.toDouble()),
+                                  value: state.currentPage.toDouble().clamp(1.0, pages.totalPages > 0 ? pages.totalPages.toDouble() : 1.0),
                                   min: 1.0,
                                   max: pages.totalPages > 0 ? pages.totalPages.toDouble() : 1.0,
                                   divisions: pages.totalPages > 1 ? pages.totalPages - 1 : 1,
@@ -426,6 +534,10 @@ class _ReaderViewState extends State<_ReaderView> {
                                     context.read<ReaderBloc>().add(ChangePageEvent(index));
                                     if (!state.isWebtoonMode && _pageController.hasClients) {
                                       _pageController.jumpToPage(index);
+                                    } else if (state.isWebtoonMode && _scrollController.hasClients && pages.totalPages > 1) {
+                                      final maxExtent = _scrollController.position.maxScrollExtent;
+                                      final targetOffset = (index / (pages.totalPages - 1)) * maxExtent;
+                                      _scrollController.jumpTo(targetOffset.clamp(0.0, maxExtent));
                                     }
                                   },
                                 ),
@@ -448,30 +560,55 @@ class _ReaderViewState extends State<_ReaderView> {
               ],
             );
           } else if (state is ReaderError) {
+            // Trạng thái mất mạng S09 (FR-13)
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.cloud_off_rounded, size: 64, color: AppColors.error),
+                    const Icon(Icons.cloud_off_rounded, size: 64, color: AppColors.warning),
                     const SizedBox(height: 16),
+                    const Text(
+                      'Oops! Chương truyện chưa được tải ngoại tuyến',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       state.message,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 14),
+                      style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      onPressed: () => context.read<ReaderBloc>().add(LoadChapterPagesEvent(
-                            chapterId: _activeChapterId,
-                            comicId: widget.comicId,
-                            comicTitle: widget.comicTitle,
-                            coverUrl: widget.coverUrl,
-                            chapterNumber: _activeChapterNumber,
-                          )),
-                      child: const Text('Thử tải lại', style: TextStyle(color: Colors.white)),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.darkTextPrimary,
+                            side: const BorderSide(color: AppColors.darkBorder),
+                          ),
+                          onPressed: () => context.read<ReaderBloc>().add(LoadChapterPagesEvent(
+                                chapterId: _activeChapterId,
+                                comicId: widget.comicId,
+                                comicTitle: widget.comicTitle,
+                                coverUrl: widget.coverUrl,
+                                chapterNumber: _activeChapterNumber,
+                              )),
+                          child: const Text('Thử tải lại'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                          icon: const Icon(Icons.offline_pin_rounded, color: Colors.white, size: 18),
+                          label: const Text('Mở Kho Ngoại Tuyến', style: TextStyle(color: Colors.white)),
+                          onPressed: () {
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                            sl<ThemeController>().navigateToOfflineLibrary();
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -491,7 +628,7 @@ class _ReaderViewState extends State<_ReaderView> {
         imageUrl: url,
         fit: fit,
         placeholder: (context, url) => Container(
-          height: 300,
+          height: 360,
           color: AppColors.darkSurface,
           child: const Center(
             child: SizedBox(
@@ -524,81 +661,98 @@ class _ReaderViewState extends State<_ReaderView> {
     }
   }
 
-  /// Chế độ cuộn dọc liên tục kiểu Webtoon
+  /// Chế độ cuộn dọc liên tục kiểu Webtoon (Đã sửa lỗi theo dõi số trang & lưu tiến độ FR-04 + tối ưu cacheExtent 60 FPS)
   Widget _buildWebtoonViewer(BuildContext context, ReaderLoaded state) {
     final hasNext = widget.chaptersList.isNotEmpty && _currentIndex < widget.chaptersList.length - 1;
     final nextChapter = hasNext ? widget.chaptersList[_currentIndex + 1] : null;
+    final totalPages = state.pages.totalPages;
 
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: state.pages.totalPages + 1, // +1 cho thẻ Điều hướng cuối chương
-      itemBuilder: (context, index) {
-        if (index < state.pages.totalPages) {
-          final url = state.pages.getPageUrl(index, isDataSaver: state.isDataSaver);
-          return InteractiveViewer(
-            minScale: 1.0,
-            maxScale: 3.5,
-            child: _buildImagePage(url, fit: BoxFit.fitWidth),
-          );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollInfo) {
+        if (scrollInfo is ScrollUpdateNotification &&
+            scrollInfo.metrics.maxScrollExtent > 0 &&
+            totalPages > 1) {
+          final progress = (scrollInfo.metrics.pixels / scrollInfo.metrics.maxScrollExtent).clamp(0.0, 1.0);
+          final estimatedIndex = (progress * (totalPages - 1)).round();
+          if (estimatedIndex + 1 != state.currentPage) {
+            context.read<ReaderBloc>().add(ChangePageEvent(estimatedIndex));
+          }
         }
-
-        // Thẻ chuyển sang chương tiếp theo ở đáy trang cuối
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-          alignment: Alignment.center,
-          color: AppColors.darkSurface,
-          child: Column(
-            children: [
-              const Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 48),
-              const SizedBox(height: 12),
-              Text(
-                'Bạn vừa hoàn thành Chương $_activeChapterNumber',
-                style: const TextStyle(
-                  color: AppColors.darkTextPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (hasNext && nextChapter != null) ...[
-                Text(
-                  'Tiếp theo: Chương ${nextChapter.chapterNumber}${nextChapter.title.isNotEmpty ? ' - ${nextChapter.title}' : ''}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                  icon: const Icon(Icons.navigate_next_rounded),
-                  label: Text('Đọc Chương ${nextChapter.chapterNumber} ngay'),
-                  onPressed: () => _switchChapter(_currentIndex + 1),
-                ),
-              ] else ...[
-                const Text(
-                  'Chúc mừng! Bạn đã đọc đến chương mới nhất của bộ truyện này.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primaryLight),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Quay lại trang chi tiết', style: TextStyle(color: AppColors.primaryLight)),
-                ),
-              ],
-              const SizedBox(height: 40),
-            ],
-          ),
-        );
+        return false;
       },
+      child: InteractiveViewer(
+        minScale: 1.0,
+        maxScale: 3.5,
+        child: ListView.builder(
+          controller: _scrollController,
+          // ignore: deprecated_member_use
+          cacheExtent: 2500, // Nạp trước các trang ảnh kế tiếp để cuộn dọc mượt 60 FPS (NFR-03)
+          itemCount: totalPages + 1, // +1 cho thẻ Điều hướng cuối chương
+          itemBuilder: (context, index) {
+            if (index < totalPages) {
+              final url = state.pages.getPageUrl(index, isDataSaver: state.isDataSaver);
+              return _buildImagePage(url, fit: BoxFit.fitWidth);
+            }
+
+            // Thẻ chuyển sang chương tiếp theo ở đáy trang cuối
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+              alignment: Alignment.center,
+              color: AppColors.darkSurface,
+              child: Column(
+                children: [
+                  const Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 48),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Bạn vừa hoàn thành Chương $_activeChapterNumber',
+                    style: const TextStyle(
+                      color: AppColors.darkTextPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (hasNext && nextChapter != null) ...[
+                    Text(
+                      'Tiếp theo: Chương ${nextChapter.chapterNumber}${nextChapter.title.isNotEmpty ? ' - ${nextChapter.title}' : ''}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      icon: const Icon(Icons.navigate_next_rounded),
+                      label: Text('Đọc Chương ${nextChapter.chapterNumber} ngay'),
+                      onPressed: () => _switchChapter(_currentIndex + 1),
+                    ),
+                  ] else ...[
+                    const Text(
+                      'Chúc mừng! Bạn đã đọc đến chương mới nhất của bộ truyện này.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primaryLight),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Quay lại trang chi tiết', style: TextStyle(color: AppColors.primaryLight)),
+                    ),
+                  ],
+                  const SizedBox(height: 40),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 

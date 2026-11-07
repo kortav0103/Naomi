@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 /// Quản lý CSDL cục bộ SQLite của Naomi chuẩn Production (Offline-First)
 class DatabaseHelper {
   static const String _dbName = 'naomi.db';
-  static const int _dbVersion = 2; // Nâng cấp lên v2 hỗ trợ Lịch sử đọc đầy đủ
+  static const int _dbVersion = 3; // v3: Đồng bộ đầy đủ 6 bảng + user_id trên offline_downloads + 4 B-Tree Indexes
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -27,14 +27,14 @@ class DatabaseHelper {
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async {
-        // Tối ưu hiệu năng WAL (Write-Ahead Logging) cho tốc độ đọc/ghi cực nhanh <= 10ms
+        // Tối ưu hiệu năng WAL (Write-Ahead Logging) cho tốc độ đọc/ghi cực nhanh <= 10ms (NFR-09)
         await db.execute('PRAGMA journal_mode = WAL');
       },
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // 1. Bảng Truyện (Comics)
+    // 1. Bảng Truyện (Comics Metadata Cache)
     await db.execute('''
       CREATE TABLE comics (
         id TEXT PRIMARY KEY,
@@ -50,7 +50,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // 2. Bảng Chương (Chapters)
+    // 2. Bảng Chương (Chapters Metadata Cache)
     await db.execute('''
       CREATE TABLE chapters (
         id TEXT PRIMARY KEY,
@@ -64,7 +64,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // 3. Bảng Trang ảnh (Pages)
+    // 3. Bảng Trang ảnh (Pages - Weak Entity với Composite PK chuẩn Elmasri & Navathe)
     await db.execute('''
       CREATE TABLE pages (
         chapter_id TEXT NOT NULL,
@@ -112,6 +112,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE offline_downloads (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL DEFAULT 'guest_default',
         chapter_id TEXT NOT NULL UNIQUE,
         comic_id TEXT NOT NULL DEFAULT '',
         comic_title TEXT NOT NULL DEFAULT 'Manga',
@@ -125,15 +126,15 @@ class DatabaseHelper {
       )
     ''');
 
-    // Chỉ mục tăng tốc độ truy vấn <= 20ms
+    // 4 Chỉ mục B-Tree tăng tốc độ truy vấn <= 20ms (NFR-09)
     await db.execute('CREATE INDEX idx_reading_history_user ON reading_history (user_id, updated_at DESC)');
     await db.execute('CREATE INDEX idx_bookmarks_user ON bookmarks (user_id, created_at DESC)');
     await db.execute('CREATE INDEX idx_offline_downloads ON offline_downloads (chapter_id)');
+    await db.execute('CREATE INDEX idx_chapters_comic ON chapters (comic_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Nâng cấp mượt mà từ v1 lên v2
       await db.execute('DROP TABLE IF EXISTS reading_history');
       await db.execute('DROP TABLE IF EXISTS bookmarks');
       await db.execute('DROP TABLE IF EXISTS offline_downloads');
@@ -172,6 +173,7 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE offline_downloads (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL DEFAULT 'guest_default',
           chapter_id TEXT NOT NULL UNIQUE,
           comic_id TEXT NOT NULL DEFAULT '',
           comic_title TEXT NOT NULL DEFAULT 'Manga',
@@ -184,10 +186,15 @@ class DatabaseHelper {
           updated_at TEXT NOT NULL
         )
       ''');
-
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_history_user ON reading_history (user_id, updated_at DESC)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks (user_id, created_at DESC)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_offline_downloads ON offline_downloads (chapter_id)');
+    } else if (oldVersion < 3) {
+      try {
+        await db.execute("ALTER TABLE offline_downloads ADD COLUMN user_id TEXT NOT NULL DEFAULT 'guest_default'");
+      } catch (_) {}
     }
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_history_user ON reading_history (user_id, updated_at DESC)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks (user_id, created_at DESC)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_offline_downloads ON offline_downloads (chapter_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_chapters_comic ON chapters (comic_id)');
   }
 }

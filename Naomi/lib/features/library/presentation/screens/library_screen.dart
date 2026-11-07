@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../comic/presentation/screens/comic_detail_screen.dart';
 import '../../../reader/presentation/screens/reader_screen.dart';
 import '../bloc/library_bloc.dart';
@@ -21,8 +22,45 @@ class LibraryScreen extends StatelessWidget {
   }
 }
 
-class _LibraryView extends StatelessWidget {
+class _LibraryView extends StatefulWidget {
   const _LibraryView();
+
+  @override
+  State<_LibraryView> createState() => _LibraryViewState();
+}
+
+class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  final ThemeController _themeController = sl<ThemeController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: _themeController.libraryTabIndex.clamp(0, 2),
+    );
+    _themeController.addListener(_onThemeControllerChanged);
+  }
+
+  void _onThemeControllerChanged() {
+    if (!mounted) return;
+    final targetTab = _themeController.libraryTabIndex.clamp(0, 2);
+    if (_tabController.index != targetTab) {
+      _tabController.animateTo(targetTab);
+    }
+    if (_themeController.mainNavIndex == 1) {
+      context.read<LibraryBloc>().add(const LoadLibraryEvent());
+    }
+  }
+
+  @override
+  void dispose() {
+    _themeController.removeListener(_onThemeControllerChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,80 +76,80 @@ class _LibraryView extends StatelessWidget {
           downloadCount = state.downloads.length;
         }
 
-        return DefaultTabController(
-          length: 3,
-          child: Scaffold(
-            backgroundColor: AppColors.darkBackground,
-            appBar: AppBar(
-              title: const Text(
-                'TỦ SÁCH CÁ NHÂN',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
-                  color: AppColors.darkTextPrimary,
+        return Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          appBar: AppBar(
+            title: const Text(
+              'TỦ SÁCH CÁ NHÂN',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+                color: AppColors.darkTextPrimary,
+              ),
+            ),
+            bottom: TabBar(
+              controller: _tabController,
+              onTap: (index) => _themeController.setLibraryTabIndex(index),
+              indicatorColor: AppColors.primary,
+              indicatorWeight: 3,
+              labelColor: AppColors.primaryLight,
+              unselectedLabelColor: AppColors.darkTextSecondary,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+              tabs: [
+                Tab(
+                  icon: const Icon(Icons.favorite_rounded, size: 18),
+                  text: 'YÊU THÍCH ($bookmarkCount)',
                 ),
-              ),
-              bottom: TabBar(
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 3,
-                labelColor: AppColors.primaryLight,
-                unselectedLabelColor: AppColors.darkTextSecondary,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                tabs: [
-                  Tab(
-                    icon: const Icon(Icons.favorite_rounded, size: 18),
-                    text: 'YÊU THÍCH ($bookmarkCount)',
-                  ),
-                  Tab(
-                    icon: const Icon(Icons.history_rounded, size: 18),
-                    text: 'LỊCH SỬ ($historyCount)',
-                  ),
-                  Tab(
-                    icon: const Icon(Icons.offline_pin_rounded, size: 18),
-                    text: 'ĐÃ TẢI ($downloadCount)',
-                  ),
-                ],
-              ),
+                Tab(
+                  icon: const Icon(Icons.history_rounded, size: 18),
+                  text: 'LỊCH SỬ ($historyCount)',
+                ),
+                Tab(
+                  icon: const Icon(Icons.offline_pin_rounded, size: 18),
+                  text: 'ĐÃ TẢI ($downloadCount)',
+                ),
+              ],
             ),
-            body: Builder(
-              builder: (ctx) {
-                if (state is LibraryLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                } else if (state is LibraryLoaded) {
-                  return TabBarView(
+          ),
+          body: Builder(
+            builder: (ctx) {
+              if (state is LibraryLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              } else if (state is LibraryLoaded) {
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Tab 1: Danh sách Yêu thích (FR-07)
+                    _buildBookmarksTab(context, state),
+                    // Tab 2: Lịch sử đọc dở (FR-04 & FR-08)
+                    _buildHistoryTab(context, state),
+                    // Tab 3: Danh sách Tải ngoại tuyến (FR-06)
+                    _buildDownloadsTab(context, state),
+                  ],
+                );
+              } else if (state is LibraryError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Tab 1: Danh sách Yêu thích (FR-07)
-                      _buildBookmarksTab(context, state),
-                      // Tab 2: Lịch sử đọc dở (FR-04 & FR-08)
-                      _buildHistoryTab(context, state),
-                      // Tab 3: Danh sách Tải ngoại tuyến (FR-06)
-                      _buildDownloadsTab(context, state),
+                      const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text(state.message, style: const TextStyle(color: AppColors.darkTextPrimary)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                        onPressed: () => context.read<LibraryBloc>().add(const LoadLibraryEvent()),
+                        child: const Text('Tải lại', style: TextStyle(color: Colors.white)),
+                      ),
                     ],
-                  );
-                } else if (state is LibraryError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
-                        const SizedBox(height: 12),
-                        Text(state.message, style: const TextStyle(color: AppColors.darkTextPrimary)),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                          onPressed: () => context.read<LibraryBloc>().add(const LoadLibraryEvent()),
-                          child: const Text('Tải lại', style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
         );
       },

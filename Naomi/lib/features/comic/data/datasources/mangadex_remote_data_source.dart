@@ -55,6 +55,7 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           'includes[]': ['cover_art', 'author', 'artist'],
           'order[relevance]': 'desc',
           'contentRating[]': ['safe', 'suggestive'],
+          'hasAvailableChapters': 'true',
         },
       );
 
@@ -81,6 +82,7 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           'includes[]': ['cover_art', 'author', 'artist'],
           'order[followedCount]': 'desc',
           'contentRating[]': ['safe', 'suggestive'],
+          'hasAvailableChapters': 'true',
         },
       );
 
@@ -101,24 +103,37 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
     List<String> languages = const ['vi', 'en'],
   }) async {
     try {
-      final response = await client.dio.get(
-        '/manga/$comicId/feed',
-        queryParameters: {
-          'translatedLanguage[]': languages,
-          'order[chapter]': 'asc',
-          'limit': 100,
-          'includes[]': ['scanlation_group'],
-        },
-      );
+      final List<ChapterModel> allChapters = [];
+      int offset = 0;
+      const int limit = 500; // MangaDex API v5 hỗ trợ tối đa 500 chapters mỗi trang trên endpoint /feed
+      int total = 0;
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'] as List<dynamic>? ?? [];
-        return data
-            .map((json) => ChapterModel.fromJson(json as Map<String, dynamic>, comicId: comicId))
-            .toList();
-      } else {
-        throw ServerException('Lỗi tải danh sách chương: ${response.statusCode}');
-      }
+      do {
+        final response = await client.dio.get(
+          '/manga/$comicId/feed',
+          queryParameters: {
+            'translatedLanguage[]': languages,
+            'order[chapter]': 'asc',
+            'limit': limit,
+            'offset': offset,
+            'includes[]': ['scanlation_group'],
+            'includeEmptyPages': 0,
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final List<dynamic> data = response.data['data'] as List<dynamic>? ?? [];
+          total = response.data['total'] as int? ?? data.length;
+          allChapters.addAll(
+            data.map((json) => ChapterModel.fromJson(json as Map<String, dynamic>, comicId: comicId)),
+          );
+          offset += limit;
+        } else {
+          throw ServerException('Lỗi tải danh sách chương: ${response.statusCode}');
+        }
+      } while (offset < total && offset < 2500);
+
+      return allChapters;
     } on DioException catch (e) {
       throw ServerException(e.message ?? 'Lỗi kết nối MangaDex');
     }

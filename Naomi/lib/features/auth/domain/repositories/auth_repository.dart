@@ -29,4 +29,10 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> updateProfile({
     required String displayName,
   });
+
+  /// Khôi phục / Đặt lại mật khẩu qua Email (US-00 / FR-00)
+  Future<Either<Failure, void>> resetPassword({
+    required String email,
+    required String newPassword,
+  });
 }

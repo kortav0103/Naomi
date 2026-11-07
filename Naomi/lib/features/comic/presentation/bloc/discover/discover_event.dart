@@ -27,3 +27,8 @@ class FilterComicsByGenreEvent extends DiscoverEvent {
   @override
   List<Object?> get props => [genreTagId, genreName];
 }
+
+/// Nạp thêm trang tiếp theo khi cuộn xuống cuối danh sách (Infinite Scroll Pagination)
+class LoadMoreComicsEvent extends DiscoverEvent {
+  const LoadMoreComicsEvent();
+}

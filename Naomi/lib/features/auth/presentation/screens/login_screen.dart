@@ -7,7 +7,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
-/// Màn hình Đăng nhập & Đăng ký chuẩn thương mại (S01 & S01b - FR-00 & NFR-05)
+/// Màn hình Đăng nhập, Đăng ký & Khôi phục mật khẩu chuẩn thương mại (S01 - FR-00, US-00, NFR-05)
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
@@ -76,6 +76,89 @@ class _LoginViewState extends State<_LoginView> {
     context.read<AuthBloc>().add(const GuestLoginEvent());
   }
 
+  /// Hộp thoại Khôi phục mật khẩu qua Email (US-00 / S01)
+  Future<void> _showForgotPasswordDialog(BuildContext parentContext) async {
+    final resetEmailCtrl = TextEditingController(text: _emailController.text.trim());
+    final newPassCtrl = TextEditingController();
+
+    final result = await showDialog<Map<String, String>>(
+      context: parentContext,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        title: const Text(
+          'Khôi phục mật khẩu',
+          style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nhập địa chỉ Email đã đăng ký và mật khẩu mới để đặt lại quyền truy cập tài khoản:',
+              style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: resetEmailCtrl,
+              style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 13),
+              decoration: const InputDecoration(
+                labelText: 'Email tài khoản',
+                labelStyle: TextStyle(color: AppColors.darkTextSecondary),
+                prefixIcon: Icon(Icons.email_outlined, size: 18, color: AppColors.primaryLight),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: newPassCtrl,
+              obscureText: true,
+              style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 13),
+              decoration: const InputDecoration(
+                labelText: 'Mật khẩu mới (tối thiểu 6 ký tự)',
+                labelStyle: TextStyle(color: AppColors.darkTextSecondary),
+                prefixIcon: Icon(Icons.lock_reset_rounded, size: 18, color: AppColors.primaryLight),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.darkTextMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () {
+              Navigator.pop(ctx, {
+                'email': resetEmailCtrl.text.trim(),
+                'password': newPassCtrl.text.trim(),
+              });
+            },
+            child: const Text('Đặt lại mật khẩu', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && parentContext.mounted) {
+      final email = result['email'] ?? '';
+      final newPassword = result['password'] ?? '';
+      if (email.isEmpty || newPassword.length < 4) {
+        ScaffoldMessenger.of(parentContext).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng nhập Email hợp lệ và mật khẩu mới từ 4 ký tự trở lên!'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      _emailController.text = email;
+      _passwordController.text = newPassword;
+      parentContext.read<AuthBloc>().add(
+            ResetPasswordSubmittedEvent(email: email, newPassword: newPassword),
+          );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,10 +166,17 @@ class _LoginViewState extends State<_LoginView> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
-            // Tự động chuyển màn hình khi xác thực thành công (hoặc Auto-Login)
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+            );
+          } else if (state is PasswordResetSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.success,
+                duration: const Duration(seconds: 3),
+              ),
             );
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +353,22 @@ class _LoginViewState extends State<_LoginView> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    // Liên kết Quên mật khẩu (US-00 / S01)
+                    if (!_isSignUpMode)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => _showForgotPasswordDialog(context),
+                          child: const Text(
+                            'Quên mật khẩu?',
+                            style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
+                          ),
+                        ),
+                      )
+                    else
+                      const SizedBox(height: 16),
+
+                    const SizedBox(height: 8),
 
                     // 6. Nút Đăng nhập / Đăng ký
                     SizedBox(
@@ -317,7 +422,7 @@ class _LoginViewState extends State<_LoginView> {
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
 
                     // 8. Chuyển đổi Đăng nhập <-> Đăng ký
                     TextButton(

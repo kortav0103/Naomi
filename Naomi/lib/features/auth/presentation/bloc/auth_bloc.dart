@@ -13,6 +13,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<GuestLoginEvent>(_onGuestLogin);
     on<LogoutEvent>(_onLogout);
     on<UpdateProfileEvent>(_onUpdateProfile);
+    on<ResetPasswordSubmittedEvent>(_onResetPassword);
   }
 
   Future<void> _onCheckAuth(CheckAuthEvent event, Emitter<AuthState> emit) async {
@@ -78,5 +79,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         (updatedUser) => emit(Authenticated(updatedUser)),
       );
     }
+  }
+
+  Future<void> _onResetPassword(
+    ResetPasswordSubmittedEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    final result = await authRepository.resetPassword(
+      email: event.email,
+      newPassword: event.newPassword,
+    );
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(const PasswordResetSuccess(
+        'Đã khôi phục mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.',
+      )),
+    );
   }
 }

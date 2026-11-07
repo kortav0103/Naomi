@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
@@ -16,9 +17,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final ThemeController _themeController = sl<ThemeController>();
   UserEntity? _currentUser;
   double _cacheSizeMb = 0.0;
-  bool _isDarkMode = true;
   bool _isLoadingCache = true;
 
   @override
@@ -140,17 +141,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final result = await authRepo.updateProfile(displayName: newName);
       result.fold(
         (failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: ${failure.message}'), backgroundColor: AppColors.error),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Lỗi: ${failure.message}'), backgroundColor: AppColors.error),
+            );
+          }
         },
         (updated) {
-          setState(() => _currentUser = updated);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã cập nhật tên hiển thị thành công!'), backgroundColor: AppColors.primary),
-          );
+          if (mounted) {
+            setState(() => _currentUser = updated);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Đã cập nhật tên hiển thị thành công!'), backgroundColor: AppColors.primary),
+            );
+          }
         },
       );
+    }
+  }
+
+  /// Hộp thoại chọn Ngôn ngữ bản dịch mặc định (FR-14)
+  Future<void> _showLanguagePickerDialog() async {
+    final currentLang = _themeController.preferredLanguage;
+    final options = [
+      {'code': 'all', 'label': 'Tất cả (Ưu tiên Tiếng Việt VI -> EN)'},
+      {'code': 'vi', 'label': 'Chỉ bản dịch Tiếng Việt (VI)'},
+      {'code': 'en', 'label': 'Chỉ bản dịch Tiếng Anh (EN)'},
+    ];
+
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        title: const Text(
+          'Ngôn ngữ bản dịch mặc định',
+          style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((opt) {
+            final isSelected = opt['code'] == currentLang;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                color: isSelected ? AppColors.primaryLight : AppColors.darkTextMuted,
+              ),
+              title: Text(
+                opt['label']!,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppColors.primaryLight : AppColors.darkTextPrimary,
+                ),
+              ),
+              onTap: () => Navigator.pop(ctx, opt['code']),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      _themeController.setPreferredLanguage(selected);
+      setState(() {});
+    }
+  }
+
+  String _getLanguageLabel(String code) {
+    switch (code) {
+      case 'vi':
+        return 'Chỉ Tiếng Việt (VI)';
+      case 'en':
+        return 'Chỉ Tiếng Anh (EN)';
+      default:
+        return 'Tất cả (Ưu tiên Tiếng Việt VI -> EN)';
     }
   }
 
@@ -196,6 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final displayName = user?.displayName.isNotEmpty == true ? user!.displayName : 'Độc giả Naomi';
     final email = user?.email.isNotEmpty == true ? user!.email : 'reader@naomi.app';
     final isGuest = user?.isGuest ?? false;
+    final isDarkMode = _themeController.isDarkMode;
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
@@ -312,7 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // 2. Nhóm Cài đặt Giao diện & Đọc
           const Text(
-            'TÙY CHỌN ỨNG DỤNG',
+            'TÙY CHỌN ỨNG DỤNG (FR-14)',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -336,27 +401,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'Chế độ tối AMOLED',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
                   ),
-                  subtitle: const Text(
-                    'Tối ưu tiết kiệm pin trên màn hình OLED (NFR-16)',
-                    style: TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                  subtitle: Text(
+                    isDarkMode
+                        ? 'Đang bật AMOLED Dark (#111116) tiết kiệm pin OLED (NFR-16)'
+                        : 'Đang dùng chế độ Sáng (Light Mode)',
+                    style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
                   ),
-                  value: _isDarkMode,
+                  value: isDarkMode,
                   activeThumbColor: AppColors.primary,
                   onChanged: (val) {
-                    setState(() => _isDarkMode = val);
+                    _themeController.toggleDarkMode(val);
+                    setState(() {});
                   },
                 ),
                 const Divider(height: 1, color: AppColors.darkBorder),
-                const ListTile(
-                  title: Text(
+                ListTile(
+                  title: const Text(
                     'Ngôn ngữ bản dịch mặc định',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
                   ),
                   subtitle: Text(
-                    'Tiếng Việt (VI) & Tiếng Anh (EN)',
-                    style: TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                    _getLanguageLabel(_themeController.preferredLanguage),
+                    style: const TextStyle(fontSize: 11, color: AppColors.primaryLight),
                   ),
-                  trailing: Icon(Icons.chevron_right_rounded, color: AppColors.darkTextMuted),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.darkTextMuted),
+                  onTap: _showLanguagePickerDialog,
                 ),
               ],
             ),

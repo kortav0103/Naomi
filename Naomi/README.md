@@ -1,17 +1,18 @@
-# naomi
+# NAOMI — Ambient Manga Reader & Tracker
 
-A new Flutter project.
+> **Đồ án môn học:** Phát triển Ứng dụng Di động (Mobile Development Course Project)  
+> **Trường:** Đại học Bách Khoa - ĐHQG TP.HCM (HCMUT - VNU-HCM)  
+> **Giảng viên hướng dẫn:** TS. Phan Trần Minh Khuê  
+> **Sinh viên thực hiện:** Duong Dang Khoa — MSSV: 2352551  
+> **Phiên bản:** `v1.1.0-commercial-ready` (Assignment 02 Implementation & Full Audit Upgrade)
 
-## Getting Started
+Xem tài liệu hướng dẫn chi tiết, Ma trận đối chiếu yêu cầu (Traceability Matrix), Nhật ký thay đổi kiến trúc (Architecture & Design Change Log) và Báo cáo kiểm thử chấp thuận (Acceptance Testing Report) tại tệp [`../README.md`](../README.md).
 
-This project is a starting point for a Flutter application.
+## Khởi chạy nhanh (Quick Start)
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```

@@ -45,6 +45,7 @@ class FakeLibraryRepository implements LibraryRepository {
     required String chapterId,
     required String chapterNumber,
     required String chapterTitle,
+    void Function(int downloaded, int total)? onProgress,
   }) async => const Right(null);
 
   @override

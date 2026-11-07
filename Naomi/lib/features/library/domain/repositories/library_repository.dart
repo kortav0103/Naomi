@@ -35,7 +35,7 @@ abstract class LibraryRepository {
     required String chapterId,
   });
 
-  /// Tải trọn bộ các trang ảnh của chương và lưu vào SQLite để đọc ngoại tuyến (FR-06)
+  /// Tải trọn bộ các trang ảnh của chương và lưu vào SQLite để đọc ngoại tuyến (FR-06, S11)
   Future<Either<Failure, void>> downloadChapter({
     required String comicId,
     required String comicTitle,
@@ -44,6 +44,7 @@ abstract class LibraryRepository {
     required String chapterId,
     required String chapterNumber,
     required String chapterTitle,
+    void Function(int downloaded, int total)? onProgress,
   });
 
   /// Lấy danh sách lịch sử các truyện đang đọc dở (FR-04)

@@ -101,6 +101,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
     required String chapterId,
     required String chapterNumber,
     required String chapterTitle,
+    void Function(int downloaded, int total)? onProgress,
   }) async {
     try {
       await localDataSource.downloadChapter(
@@ -111,6 +112,7 @@ class LibraryRepositoryImpl implements LibraryRepository {
         chapterId: chapterId,
         chapterNumber: chapterNumber,
         chapterTitle: chapterTitle,
+        onProgress: onProgress,
       );
       return const Right(null);
     } on CacheException catch (e) {

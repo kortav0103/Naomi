@@ -1,9 +1,10 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
+import 'core/widgets/mobile_simulator_wrapper.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 
 void main() async {
@@ -11,7 +12,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Khởi tạo SQLite FFI khi chạy trên môi trường Desktop (Windows / macOS / Linux)
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
@@ -27,13 +31,26 @@ class NaomiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Naomi',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Mặc định chế độ tối AMOLED theo đặc tả
-      home: const LoginScreen(),
+    final themeController = di.sl<ThemeController>();
+
+    return ListenableBuilder(
+      listenable: themeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Naomi',
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: const MobileTouchScrollBehavior(),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeController.themeMode,
+          builder: (context, child) {
+            return MobileSimulatorWrapper(
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+          home: const LoginScreen(),
+        );
+      },
     );
   }
 }
