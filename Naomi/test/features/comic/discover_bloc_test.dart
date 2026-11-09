@@ -30,7 +30,7 @@ class FakeComicRepository implements ComicRepository {
   @override
   Future<Either<Failure, List<Chapter>>> getComicChapters({
     required String comicId,
-    List<String> languages = const ['vi', 'en'],
+    List<String> languages = const ['en'],
   }) async {
     throw UnimplementedError();
   }
@@ -89,7 +89,7 @@ void main() {
   final fakeRepo = FakeComicRepository();
 
   group('DiscoverBloc Unit Tests', () {
-    test('Trạng thái ban đầu của DiscoverBloc phải là DiscoverInitial', () {
+    test('Initial state of DiscoverBloc should be DiscoverInitial', () {
       final bloc = DiscoverBloc(
         getTrendingComics: FakeSuccessGetTrendingComics(tComicsList),
         searchComics: FakeSuccessSearchComics(tComicsList),
@@ -100,7 +100,7 @@ void main() {
       bloc.close();
     });
 
-    test('Phát ra [DiscoverLoading, DiscoverLoaded] khi nạp danh sách thịnh hành thành công', () async {
+    test('Emits [DiscoverLoading, DiscoverLoaded] when loading trending comics succeeds', () async {
       final bloc = DiscoverBloc(
         getTrendingComics: FakeSuccessGetTrendingComics(tComicsList),
         searchComics: FakeSuccessSearchComics(tComicsList),
@@ -117,16 +117,16 @@ void main() {
       bloc.add(const LoadTrendingComicsEvent());
     });
 
-    test('Phát ra [DiscoverLoading, DiscoverError] khi gọi API MangaDex thất bại', () async {
+    test('Emits [DiscoverLoading, DiscoverError] when MangaDex API call fails', () async {
       final bloc = DiscoverBloc(
-        getTrendingComics: FakeFailureGetTrendingComics('Lỗi kết nối máy chủ MangaDex'),
+        getTrendingComics: FakeFailureGetTrendingComics('MangaDex server connection error'),
         searchComics: FakeSuccessSearchComics(tComicsList),
         repository: fakeRepo,
       );
 
       final expectedStates = [
         const DiscoverLoading(),
-        const DiscoverError('Lỗi kết nối máy chủ MangaDex'),
+        const DiscoverError('MangaDex server connection error'),
       ];
 
       expectLater(bloc.stream, emitsInOrder(expectedStates));
@@ -134,7 +134,7 @@ void main() {
       bloc.add(const LoadTrendingComicsEvent());
     });
 
-    test('Phát ra [DiscoverLoading, DiscoverLoaded] với kết quả tìm kiếm theo từ khóa', () async {
+    test('Emits [DiscoverLoading, DiscoverLoaded] with search results by keyword', () async {
       final bloc = DiscoverBloc(
         getTrendingComics: FakeSuccessGetTrendingComics([]),
         searchComics: FakeSuccessSearchComics(tComicsList),
@@ -143,7 +143,7 @@ void main() {
 
       final expectedStates = [
         const DiscoverLoading(),
-        DiscoverLoaded(comics: tComicsList, activeFilterTitle: 'Kết quả: "Frieren"'),
+        DiscoverLoaded(comics: tComicsList, activeFilterTitle: 'Results: "Frieren"'),
       ];
 
       expectLater(bloc.stream, emitsInOrder(expectedStates));

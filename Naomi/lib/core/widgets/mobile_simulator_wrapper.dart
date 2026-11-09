@@ -29,7 +29,7 @@ enum SimulatorDevice {
     isFullScreen: false,
   ),
   fullScreen(
-    label: 'Toàn màn hình (Desktop)',
+    label: 'Full Screen (Desktop)',
     width: double.infinity,
     height: double.infinity,
     borderRadius: 0,
@@ -198,7 +198,7 @@ class _MobileSimulatorWrapperState extends State<MobileSimulatorWrapper> {
             ),
             if (!_selectedDevice.isFullScreen)
               IconButton(
-                tooltip: 'Xoay màn hình Dọc / Ngang',
+                tooltip: 'Rotate Portrait / Landscape',
                 icon: Icon(
                   _isLandscape ? Icons.stay_current_landscape_rounded : Icons.stay_current_portrait_rounded,
                   size: 18,

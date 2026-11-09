@@ -9,7 +9,8 @@ abstract class AuthRepository {
     required String password,
   });
 
-  /// Đăng ký tài khoản mới
+  /// Đăng ký tài khoản mới.
+  /// Trả về [EmailConfirmationRequiredFailure] nếu máy chủ yêu cầu xác nhận email trước khi đăng nhập.
   Future<Either<Failure, UserEntity>> signUp({
     required String email,
     required String password,
@@ -30,9 +31,8 @@ abstract class AuthRepository {
     required String displayName,
   });
 
-  /// Khôi phục / Đặt lại mật khẩu qua Email (US-00 / FR-00)
+  /// Gửi email chứa liên kết đặt lại mật khẩu (US-00 / FR-00)
   Future<Either<Failure, void>> resetPassword({
     required String email,
-    required String newPassword,
   });
 }

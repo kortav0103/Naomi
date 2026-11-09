@@ -24,7 +24,7 @@ class ComicRepositoryImpl implements ComicRepository {
   @override
   Future<Either<Failure, List<Comic>>> getTrendingComics({int limit = 20, int offset = 0}) async {
     if (!await _isConnected()) {
-      return const Left(NetworkFailure('Không có kết nối mạng để nạp truyện thịnh hành.'));
+      return const Left(NetworkFailure('No internet connection to load trending comics.'));
     }
 
     try {
@@ -44,7 +44,7 @@ class ComicRepositoryImpl implements ComicRepository {
     int offset = 0,
   }) async {
     if (!await _isConnected()) {
-      return const Left(NetworkFailure('Vui lòng kết nối mạng để tìm kiếm truyện.'));
+      return const Left(NetworkFailure('Please connect to the internet to search for comics.'));
     }
 
     try {
@@ -64,7 +64,7 @@ class ComicRepositoryImpl implements ComicRepository {
     int offset = 0,
   }) async {
     if (!await _isConnected()) {
-      return const Left(NetworkFailure('Vui lòng kết nối mạng để lọc theo thể loại.'));
+      return const Left(NetworkFailure('Please connect to the internet to filter by genre.'));
     }
 
     try {
@@ -80,10 +80,10 @@ class ComicRepositoryImpl implements ComicRepository {
   @override
   Future<Either<Failure, List<Chapter>>> getComicChapters({
     required String comicId,
-    List<String> languages = const ['vi', 'en'],
+    List<String> languages = const ['en'],
   }) async {
     if (!await _isConnected()) {
-      return const Left(NetworkFailure('Không có kết nối mạng để tải danh sách chương.'));
+      return const Left(NetworkFailure('No internet connection to load chapter list.'));
     }
 
     try {
@@ -99,7 +99,7 @@ class ComicRepositoryImpl implements ComicRepository {
   @override
   Future<Either<Failure, Comic>> getComicDetail({required String comicId}) async {
     if (!await _isConnected()) {
-      return const Left(NetworkFailure('Không có kết nối mạng để xem chi tiết truyện.'));
+      return const Left(NetworkFailure('No internet connection to view comic details.'));
     }
 
     try {

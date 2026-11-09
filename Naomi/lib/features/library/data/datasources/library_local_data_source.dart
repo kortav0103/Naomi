@@ -93,12 +93,12 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
           comicId: row['comic_id'] as String,
           title: row['title'] as String? ?? 'Untitled Manga',
           coverUrl: row['cover_url'] as String?,
-          author: row['author'] as String? ?? 'Tác giả chưa cập nhật',
+          author: row['author'] as String? ?? 'Unknown Author',
           addedAt: row['created_at'] as String? ?? '',
         );
       }).toList();
     } catch (e) {
-      throw CacheException('Lỗi nạp danh sách truyện yêu thích: $e');
+      throw CacheException('Error loading favorites: $e');
     }
   }
 
@@ -190,7 +190,7 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
         return true;
       }
     } catch (e) {
-      throw CacheException('Lỗi cập nhật yêu thích: $e');
+      throw CacheException('Error updating favorites: $e');
     }
   }
 
@@ -200,10 +200,11 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
 
     try {
       final db = await dbHelper.database;
+      final userId = await _getActiveUserId();
       final List<Map<String, dynamic>> results = await db.query(
         'offline_downloads',
-        where: 'status = ?',
-        whereArgs: ['completed'],
+        where: 'status = ? AND user_id = ?',
+        whereArgs: ['completed', userId],
         orderBy: 'created_at DESC',
       );
 
@@ -218,7 +219,7 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
         );
       }).toList();
     } catch (e) {
-      throw CacheException('Lỗi nạp danh sách truyện ngoại tuyến: $e');
+      throw CacheException('Error loading offline chapters: $e');
     }
   }
 
@@ -228,10 +229,11 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
 
     try {
       final db = await dbHelper.database;
+      final userId = await _getActiveUserId();
       final results = await db.query(
         'offline_downloads',
-        where: 'chapter_id = ? AND status = ?',
-        whereArgs: [chapterId, 'completed'],
+        where: 'chapter_id = ? AND status = ? AND user_id = ?',
+        whereArgs: [chapterId, 'completed', userId],
       );
       return results.isNotEmpty;
     } catch (e) {
@@ -376,7 +378,7 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
           await chapterDir.delete(recursive: true);
         } catch (_) {}
       }
-      throw CacheException('Không thể tải chương truyện về thiết bị: $e');
+      throw CacheException('Unable to download chapter to device: $e');
     }
   }
 
@@ -389,12 +391,13 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
 
     try {
       final db = await dbHelper.database;
+      final userId = await _getActiveUserId();
 
       final results = await db.query(
         'offline_downloads',
         columns: ['local_directory'],
-        where: 'chapter_id = ?',
-        whereArgs: [chapterId],
+        where: 'chapter_id = ? AND user_id = ?',
+        whereArgs: [chapterId, userId],
       );
 
       if (results.isNotEmpty) {
@@ -408,9 +411,10 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
       }
 
       await db.delete('pages', where: 'chapter_id = ?', whereArgs: [chapterId]);
-      await db.delete('offline_downloads', where: 'chapter_id = ?', whereArgs: [chapterId]);
+      await db.delete('chapters', where: 'id = ?', whereArgs: [chapterId]);
+      await db.delete('offline_downloads', where: 'chapter_id = ? AND user_id = ?', whereArgs: [chapterId, userId]);
     } catch (e) {
-      throw CacheException('Lỗi xóa chương ngoại tuyến: $e');
+      throw CacheException('Error deleting offline chapter: $e');
     }
   }
 
@@ -444,7 +448,7 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
         );
       }).toList();
     } catch (e) {
-      throw CacheException('Lỗi nạp lịch sử đọc dở: $e');
+      throw CacheException('Error loading reading history: $e');
     }
   }
 
@@ -497,7 +501,7 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
       final userId = await _getActiveUserId();
       await db.delete('reading_history', where: 'user_id = ?', whereArgs: [userId]);
     } catch (e) {
-      throw CacheException('Không thể xóa lịch sử đọc: $e');
+      throw CacheException('Unable to clear reading history: $e');
     }
   }
 
@@ -538,6 +542,19 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
       final db = await dbHelper.database;
       final userId = await _getActiveUserId();
 
+      // 1. Đồng bộ thông tin bộ truyện vào bảng comics
+      await db.insert(
+        'comics',
+        {
+          'id': comicId,
+          'title': comicTitle,
+          'cover_url': coverUrl,
+          'updated_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 2. Ghi nhận / Cập nhật tiến độ đọc dở
       await db.insert(
         'reading_history',
         {
@@ -555,8 +572,19 @@ class LibraryLocalDataSourceImpl implements LibraryLocalDataSource {
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+
+      // 3. Tự động dọn dẹp lịch sử: Giới hạn tối đa 100 bộ truyện đọc gần nhất cho mỗi tài khoản (Retention Policy)
+      await db.execute('''
+        DELETE FROM reading_history
+        WHERE user_id = ? AND id NOT IN (
+          SELECT id FROM reading_history
+          WHERE user_id = ?
+          ORDER BY updated_at DESC
+          LIMIT 100
+        )
+      ''', [userId, userId]);
     } catch (e) {
-      throw CacheException('Không thể lưu tiến trình đọc: $e');
+      throw CacheException('Unable to save reading progress: $e');
     }
   }
 }

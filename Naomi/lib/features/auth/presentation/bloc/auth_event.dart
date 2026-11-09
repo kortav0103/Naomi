@@ -55,13 +55,9 @@ class UpdateProfileEvent extends AuthEvent {
 
 class ResetPasswordSubmittedEvent extends AuthEvent {
   final String email;
-  final String newPassword;
 
-  const ResetPasswordSubmittedEvent({
-    required this.email,
-    required this.newPassword,
-  });
+  const ResetPasswordSubmittedEvent(this.email);
 
   @override
-  List<Object?> get props => [email, newPassword];
+  List<Object?> get props => [email];
 }

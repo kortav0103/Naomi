@@ -55,7 +55,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
       (failure) => emit(DiscoverError(failure.message)),
       (comics) => emit(DiscoverLoaded(
         comics: comics,
-        activeFilterTitle: 'Kết quả: "$trimmed"',
+        activeFilterTitle: 'Results: "$trimmed"',
         currentOffset: comics.length,
         currentQuery: trimmed,
       )),
@@ -76,7 +76,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
       (failure) => emit(DiscoverError(failure.message)),
       (comics) => emit(DiscoverLoaded(
         comics: comics,
-        activeFilterTitle: 'Thể loại: ${event.genreName}',
+        activeFilterTitle: 'Genre: ${event.genreName}',
         currentOffset: comics.length,
         currentGenreId: event.genreTagId,
       )),

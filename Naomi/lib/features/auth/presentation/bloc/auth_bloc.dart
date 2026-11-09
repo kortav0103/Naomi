@@ -22,7 +22,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (_) => emit(const Unauthenticated()),
       (user) {
         if (user != null) {
-          emit(Authenticated(user));
+          emit(Authenticated(user, isGuest: user.isGuest));
         } else {
           emit(const Unauthenticated());
         }
@@ -38,7 +38,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) => emit(Authenticated(user, isGuest: user.isGuest)),
     );
   }
 
@@ -51,7 +51,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) => emit(Authenticated(user, isGuest: user.isGuest)),
     );
   }
 
@@ -60,14 +60,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await authRepository.continueAsGuest();
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) => emit(Authenticated(user, isGuest: true)),
     );
   }
 
   Future<void> _onLogout(LogoutEvent event, Emitter<AuthState> emit) async {
     emit(const AuthLoading());
-    await authRepository.logout();
-    emit(const Unauthenticated());
+    try {
+      await authRepository.logout();
+    } catch (_) {
+      // Đảm bảo app luôn xóa phiên trên UI dù repo/storage gặp ngoại lệ
+    } finally {
+      emit(const Unauthenticated());
+    }
   }
 
   Future<void> _onUpdateProfile(UpdateProfileEvent event, Emitter<AuthState> emit) async {
@@ -75,8 +80,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (currentState is Authenticated) {
       final result = await authRepository.updateProfile(displayName: event.displayName);
       result.fold(
-        (failure) => emit(AuthError(failure.message)),
-        (updatedUser) => emit(Authenticated(updatedUser)),
+        // Giữ nguyên trạng thái Authenticated hiện tại, chỉ gắn thông báo lỗi để hiển thị SnackBar
+        (failure) => emit(currentState.copyWith(
+          updateError: failure.message,
+          updateSuccessMessage: null,
+        )),
+        // Cập nhật thành công thông tin user mới
+        (updatedUser) => emit(currentState.copyWith(
+          user: updatedUser,
+          updateError: null,
+          updateSuccessMessage: 'Profile updated successfully!',
+        )),
       );
     }
   }
@@ -88,12 +102,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
     final result = await authRepository.resetPassword(
       email: event.email,
-      newPassword: event.newPassword,
     );
     result.fold(
       (failure) => emit(AuthError(failure.message)),
       (_) => emit(const PasswordResetSuccess(
-        'Đã khôi phục mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.',
+        'Password reset link has been sent to your email. Please check your inbox!',
       )),
     );
   }

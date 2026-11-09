@@ -29,6 +29,8 @@ class DatabaseHelper {
       onConfigure: (db) async {
         // Tối ưu hiệu năng WAL (Write-Ahead Logging) cho tốc độ đọc/ghi cực nhanh <= 10ms (NFR-09)
         await db.execute('PRAGMA journal_mode = WAL');
+        // Kích hoạt toàn vẹn tham chiếu Khóa ngoại (Foreign Key Constraints)
+        await db.execute('PRAGMA foreign_keys = ON');
       },
     );
   }

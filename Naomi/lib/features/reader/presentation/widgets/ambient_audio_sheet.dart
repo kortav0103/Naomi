@@ -3,15 +3,11 @@ import 'package:just_audio/just_audio.dart';
 import '../../../../core/audio/ambient_audio_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 
-/// BottomSheet S06 điều khiển nhạc nền Ambient theo thể loại truyện (FR-05, FR-09)
+/// BottomSheet điều khiển nhạc nền không lời thư giãn
 class AmbientAudioSheet extends StatefulWidget {
-  final List<String> comicGenres;
-
-  const AmbientAudioSheet({
-    super.key,
-    this.comicGenres = const [],
-  });
+  const AmbientAudioSheet({super.key});
 
   @override
   State<AmbientAudioSheet> createState() => _AmbientAudioSheetState();
@@ -29,13 +25,13 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final recommendedTrack = _audioService.recommendTrackForGenres(widget.comicGenres);
+    final tracks = AmbientAudioService.defaultTracks;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -45,7 +41,7 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.darkBorder,
+              color: context.borderColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -53,36 +49,18 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
 
           // Tiêu đề
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.music_note_rounded, color: AppColors.primaryLight, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'NHẠC NỀN AMBIENT (FR-05)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: AppColors.darkTextPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              if (widget.comicGenres.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
-                  ),
-                  child: Text(
-                    'Gợi ý: ${recommendedTrack['genre']}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primaryLight),
-                  ),
+              const Icon(Icons.music_note_rounded, color: AppColors.primaryLight, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'AMBIENT BACKGROUND AUDIO',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: context.textPrimary,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -97,9 +75,9 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.darkBackground,
+                  color: context.backgroundColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.darkBorder),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Column(
                   children: [
@@ -116,10 +94,10 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
                               _audioService.pause();
                             } else {
                               if (_audioService.player.audioSource == null) {
+                                final firstTrack = tracks.first;
                                 _audioService.playTrack(
-                                  url: recommendedTrack['url']!,
-                                  title: recommendedTrack['title']!,
-                                  genre: recommendedTrack['genre']!,
+                                  asset: firstTrack['asset']!,
+                                  title: firstTrack['title']!,
                                 );
                               } else {
                                 _audioService.resume();
@@ -137,19 +115,17 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
                                 _audioService.currentTrackTitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.darkTextPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.textPrimary,
                                 ),
                               ),
                               Text(
-                                isPlaying
-                                    ? 'Đang phát (${_audioService.currentTrackGenre})...'
-                                    : 'Nhấn Play để phát giai điệu gợi ý: ${recommendedTrack['title']}',
+                                isPlaying ? 'Playing ambient audio...' : 'Tap Play to start listening',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                                style: TextStyle(fontSize: 11, color: context.textSecondary),
                               ),
                             ],
                           ),
@@ -160,12 +136,12 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
                     // Thanh trượt âm lượng (Volume)
                     Row(
                       children: [
-                        const Icon(Icons.volume_mute_rounded, size: 16, color: AppColors.darkTextMuted),
+                        Icon(Icons.volume_mute_rounded, size: 16, color: context.textMuted),
                         Expanded(
                           child: SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: AppColors.primaryLight,
-                              inactiveTrackColor: AppColors.darkBorder,
+                              inactiveTrackColor: context.borderColor,
                               thumbColor: AppColors.primary,
                               trackHeight: 2,
                             ),
@@ -180,7 +156,7 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
                             ),
                           ),
                         ),
-                        const Icon(Icons.volume_up_rounded, size: 16, color: AppColors.darkTextMuted),
+                        Icon(Icons.volume_up_rounded, size: 16, color: context.textMuted),
                       ],
                     ),
                   ],
@@ -189,86 +165,72 @@ class _AmbientAudioSheetState extends State<AmbientAudioSheet> {
             },
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Danh sách các giai điệu để lựa chọn
-          const Align(
+          // Tiêu đề danh sách bản nhạc
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'DANH SÁCH GIAI ĐIỆU GỢI Ý THEO THỂ LOẠI',
+              'SOUNDTRACK PLAYLIST',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
-                color: AppColors.darkTextMuted,
+                color: context.textMuted,
               ),
             ),
           ),
           const SizedBox(height: 8),
 
+          // Danh sách toàn bộ các bản nhạc
           Flexible(
             child: ListView.separated(
               shrinkWrap: true,
-              itemCount: AmbientAudioService.defaultTracks.length,
+              itemCount: tracks.length,
               separatorBuilder: (context, index) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
-                final track = AmbientAudioService.defaultTracks[index];
+                final track = tracks[index];
                 final isCurrent = _audioService.currentTrackTitle == track['title'];
-                final isRecommended = recommendedTrack['title'] == track['title'];
 
                 return ListTile(
                   dense: true,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
-                      color: isCurrent
-                          ? AppColors.primary
-                          : isRecommended
-                              ? AppColors.primaryLight.withValues(alpha: 0.5)
-                              : Colors.transparent,
+                      color: isCurrent ? AppColors.primary : Colors.transparent,
                     ),
                   ),
-                  tileColor: isCurrent ? AppColors.primary.withValues(alpha: 0.15) : AppColors.darkBackground,
+                  tileColor: isCurrent ? AppColors.primary.withValues(alpha: 0.15) : context.backgroundColor,
                   leading: Icon(
                     isCurrent ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
-                    color: isCurrent ? AppColors.primaryLight : AppColors.darkTextMuted,
+                    color: isCurrent ? AppColors.primaryLight : context.textMuted,
                     size: 18,
                   ),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          track['title']!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                            color: isCurrent ? AppColors.primaryLight : AppColors.darkTextPrimary,
-                          ),
-                        ),
-                      ),
-                      if (isRecommended)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  title: Text(
+                    track['title']!,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                      color: isCurrent ? AppColors.primaryLight : context.textPrimary,
+                    ),
+                  ),
+                  trailing: isCurrent
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
-                            'Phù hợp nhất',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primaryLight),
+                            'Active',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primaryLight),
                           ),
-                        ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    'Thể loại: ${track['genre']}',
-                    style: const TextStyle(fontSize: 10, color: AppColors.darkTextMuted),
-                  ),
+                        )
+                      : null,
                   onTap: () {
                     _audioService.playTrack(
-                      url: track['url']!,
+                      asset: track['asset']!,
                       title: track['title']!,
-                      genre: track['genre']!,
                     );
                     setState(() {});
                   },

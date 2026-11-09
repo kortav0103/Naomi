@@ -10,7 +10,7 @@ class GetComicChapters {
 
   Future<Either<Failure, List<Chapter>>> call({
     required String comicId,
-    List<String> languages = const ['vi', 'en'],
+    List<String> languages = const ['en'],
   }) {
     return repository.getComicChapters(comicId: comicId, languages: languages);
   }

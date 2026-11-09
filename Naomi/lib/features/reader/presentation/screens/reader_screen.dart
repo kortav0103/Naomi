@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../comic/domain/entities/chapter.dart';
 import '../bloc/reader_bloc.dart';
@@ -150,7 +151,7 @@ class _ReaderViewState extends State<_ReaderView> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.darkSurface,
+      backgroundColor: context.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -164,7 +165,7 @@ class _ReaderViewState extends State<_ReaderView> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.darkBorder,
+                  color: context.borderColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -174,7 +175,7 @@ class _ReaderViewState extends State<_ReaderView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'DANH SÁCH CHƯƠNG',
+                      'CHAPTER LIST',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -183,13 +184,13 @@ class _ReaderViewState extends State<_ReaderView> {
                       ),
                     ),
                     Text(
-                      '${widget.chaptersList.length} chương',
-                      style: const TextStyle(fontSize: 12, color: AppColors.darkTextMuted),
+                      '${widget.chaptersList.length} chapters',
+                      style: TextStyle(fontSize: 12, color: context.textMuted),
                     ),
                   ],
                 ),
               ),
-              const Divider(color: AppColors.darkBorder, height: 1),
+              Divider(color: context.borderColor, height: 1),
               Expanded(
                 child: ListView.builder(
                   itemCount: widget.chaptersList.length,
@@ -202,20 +203,20 @@ class _ReaderViewState extends State<_ReaderView> {
                       tileColor: isCurrent ? AppColors.primary.withValues(alpha: 0.15) : null,
                       leading: Icon(
                         isCurrent ? Icons.play_arrow_rounded : Icons.menu_book_rounded,
-                        color: isCurrent ? AppColors.primaryLight : AppColors.darkTextMuted,
+                        color: isCurrent ? AppColors.primaryLight : context.textMuted,
                         size: 20,
                       ),
                       title: Text(
-                        'Chương ${chapter.chapterNumber}${chapter.title.isNotEmpty ? ': ${chapter.title}' : ''}',
+                        'Chapter ${chapter.chapterNumber}${chapter.title.isNotEmpty ? ': ${chapter.title}' : ''}',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                          color: isCurrent ? AppColors.primaryLight : AppColors.darkTextPrimary,
+                          color: isCurrent ? AppColors.primaryLight : context.textPrimary,
                         ),
                       ),
                       subtitle: Text(
                         '[${chapter.translatedLanguage.toUpperCase()}] • ${chapter.scanlationGroup}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
+                        style: TextStyle(fontSize: 11, color: context.textMuted),
                       ),
                       onTap: () {
                         Navigator.pop(bottomSheetContext);
@@ -287,7 +288,7 @@ class _ReaderViewState extends State<_ReaderView> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Đang nạp trọn bộ Chương $_activeChapterNumber (S10 Preload)...',
+                      'Preloading Chapter $_activeChapterNumber...',
                       style: const TextStyle(color: AppColors.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 16),
@@ -301,7 +302,7 @@ class _ReaderViewState extends State<_ReaderView> {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'Tối ưu bộ đệm trước để cuộn đọc mượt mà 60 FPS không giật lag.',
+                      'Buffering pages for smooth 60 FPS reading.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.darkTextMuted, fontSize: 11),
                     ),
@@ -347,7 +348,7 @@ class _ReaderViewState extends State<_ReaderView> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'AI Translation (FR-12) • Trang ${state.currentPage}/${pages.totalPages}: Đã đồng bộ ngữ cảnh bản dịch Tiếng Việt cho "${widget.comicTitle} - Ch.$_activeChapterNumber".',
+                              'AI Translation • Page ${state.currentPage}/${pages.totalPages}: Context-aware English translation active for "${widget.comicTitle} - Ch.$_activeChapterNumber".',
                               style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 11, height: 1.3),
                             ),
                           ),
@@ -391,7 +392,7 @@ class _ReaderViewState extends State<_ReaderView> {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        'Chương $_activeChapterNumber',
+                                        'Chapter $_activeChapterNumber',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
@@ -419,7 +420,7 @@ class _ReaderViewState extends State<_ReaderView> {
                         ),
                         // Nút AI Translate tại chỗ (FR-12 / S05)
                         IconButton(
-                          tooltip: 'Dịch thuật chương bằng AI (FR-12)',
+                          tooltip: 'AI Translate Chapter',
                           icon: Icon(
                             Icons.translate_rounded,
                             color: _isAiTranslated ? AppColors.warning : AppColors.darkTextSecondary,
@@ -431,7 +432,7 @@ class _ReaderViewState extends State<_ReaderView> {
                         ),
                         // Nút đổi chế độ Cuộn dọc / Lật ngang (FR-03)
                         IconButton(
-                          tooltip: state.isWebtoonMode ? 'Chuyển sang Lật ngang' : 'Chuyển sang Cuộn dọc',
+                          tooltip: state.isWebtoonMode ? 'Switch to Page Flip' : 'Switch to Vertical Scroll',
                           icon: Icon(
                             state.isWebtoonMode ? Icons.view_day_rounded : Icons.view_carousel_rounded,
                             color: AppColors.primaryLight,
@@ -443,7 +444,7 @@ class _ReaderViewState extends State<_ReaderView> {
                         // Nút đổi hướng đọc Manga: LTR vs RTL (Chuẩn Nhật Bản)
                         if (!state.isWebtoonMode)
                           IconButton(
-                            tooltip: state.isRTL ? 'Hướng đọc: Phải sang Trái (RTL)' : 'Hướng đọc: Trái sang Phải (LTR)',
+                            tooltip: state.isRTL ? 'Reading Direction: Right to Left (RTL)' : 'Reading Direction: Left to Right (LTR)',
                             icon: Icon(
                               state.isRTL ? Icons.swap_horizontal_circle : Icons.swap_horizontal_circle_outlined,
                               color: state.isRTL ? AppColors.primaryLight : AppColors.darkTextSecondary,
@@ -454,7 +455,7 @@ class _ReaderViewState extends State<_ReaderView> {
                           ),
                         // Nút bật Data Saver (NFR-18)
                         IconButton(
-                          tooltip: state.isDataSaver ? 'Chất lượng gốc' : 'Tiết kiệm 4G (Data Saver)',
+                          tooltip: state.isDataSaver ? 'Original Quality' : 'Data Saver Mode',
                           icon: Icon(
                             state.isDataSaver ? Icons.data_saver_on_rounded : Icons.high_quality_rounded,
                             color: state.isDataSaver ? AppColors.warning : AppColors.darkTextSecondary,
@@ -465,7 +466,7 @@ class _ReaderViewState extends State<_ReaderView> {
                         ),
                         // Nút mở Nhạc nền Ambient theo thể loại truyện (FR-05 & S06)
                         IconButton(
-                          tooltip: 'Nhạc nền thư giãn theo thể loại',
+                          tooltip: 'Ambient Background Audio',
                           icon: const Icon(
                             Icons.music_note_rounded,
                             color: AppColors.primaryLight,
@@ -475,7 +476,7 @@ class _ReaderViewState extends State<_ReaderView> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (_) => AmbientAudioSheet(comicGenres: widget.comicGenres),
+                              builder: (_) => const AmbientAudioSheet(),
                             );
                           },
                         ),
@@ -509,7 +510,7 @@ class _ReaderViewState extends State<_ReaderView> {
                                 icon: const Icon(Icons.skip_previous_rounded, size: 22),
                                 color: hasPrevious ? Colors.white : AppColors.darkTextMuted,
                                 onPressed: hasPrevious ? () => _switchChapter(_currentIndex - 1) : null,
-                                tooltip: 'Chương trước',
+                                tooltip: 'Previous Chapter',
                               ),
                             Text(
                               '${state.currentPage} / ${pages.totalPages}',
@@ -549,7 +550,7 @@ class _ReaderViewState extends State<_ReaderView> {
                                 icon: const Icon(Icons.skip_next_rounded, size: 22),
                                 color: hasNext ? Colors.white : AppColors.darkTextMuted,
                                 onPressed: hasNext ? () => _switchChapter(_currentIndex + 1) : null,
-                                tooltip: 'Chương sau',
+                                tooltip: 'Next Chapter',
                               ),
                           ],
                         ),
@@ -570,7 +571,7 @@ class _ReaderViewState extends State<_ReaderView> {
                     const Icon(Icons.cloud_off_rounded, size: 64, color: AppColors.warning),
                     const SizedBox(height: 16),
                     const Text(
-                      'Oops! Chương truyện chưa được tải ngoại tuyến',
+                      'Oops! Chapter is not downloaded for offline reading',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
                     ),
@@ -596,13 +597,13 @@ class _ReaderViewState extends State<_ReaderView> {
                                 coverUrl: widget.coverUrl,
                                 chapterNumber: _activeChapterNumber,
                               )),
-                          child: const Text('Thử tải lại'),
+                          child: const Text('Retry'),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                           icon: const Icon(Icons.offline_pin_rounded, color: Colors.white, size: 18),
-                          label: const Text('Mở Kho Ngoại Tuyến', style: TextStyle(color: Colors.white)),
+                          label: const Text('Open Offline Library', style: TextStyle(color: Colors.white)),
                           onPressed: () {
                             Navigator.of(context).popUntil((route) => route.isFirst);
                             sl<ThemeController>().navigateToOfflineLibrary();
@@ -698,15 +699,15 @@ class _ReaderViewState extends State<_ReaderView> {
             return Container(
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
               alignment: Alignment.center,
-              color: AppColors.darkSurface,
+              color: context.surfaceColor,
               child: Column(
                 children: [
                   const Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 48),
                   const SizedBox(height: 12),
                   Text(
-                    'Bạn vừa hoàn thành Chương $_activeChapterNumber',
-                    style: const TextStyle(
-                      color: AppColors.darkTextPrimary,
+                    'You finished Chapter $_activeChapterNumber',
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -714,9 +715,9 @@ class _ReaderViewState extends State<_ReaderView> {
                   const SizedBox(height: 8),
                   if (hasNext && nextChapter != null) ...[
                     Text(
-                      'Tiếp theo: Chương ${nextChapter.chapterNumber}${nextChapter.title.isNotEmpty ? ' - ${nextChapter.title}' : ''}',
+                      'Next: Chapter ${nextChapter.chapterNumber}${nextChapter.title.isNotEmpty ? ' - ${nextChapter.title}' : ''}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                      style: TextStyle(color: context.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
@@ -727,14 +728,14 @@ class _ReaderViewState extends State<_ReaderView> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       icon: const Icon(Icons.navigate_next_rounded),
-                      label: Text('Đọc Chương ${nextChapter.chapterNumber} ngay'),
+                      label: Text('Read Chapter ${nextChapter.chapterNumber} Now'),
                       onPressed: () => _switchChapter(_currentIndex + 1),
                     ),
                   ] else ...[
-                    const Text(
-                      'Chúc mừng! Bạn đã đọc đến chương mới nhất của bộ truyện này.',
+                    Text(
+                      'Congratulations! You have reached the latest chapter of this comic.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
+                      style: TextStyle(color: context.textMuted, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
@@ -743,7 +744,7 @@ class _ReaderViewState extends State<_ReaderView> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Quay lại trang chi tiết', style: TextStyle(color: AppColors.primaryLight)),
+                      child: const Text('Back to Comic Details', style: TextStyle(color: AppColors.primaryLight)),
                     ),
                   ],
                   const SizedBox(height: 40),

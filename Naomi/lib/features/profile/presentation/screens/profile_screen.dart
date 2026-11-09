@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/domain/repositories/auth_repository.dart';
@@ -88,15 +89,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: AppColors.darkSurface,
+        SnackBar(
+          backgroundColor: context.surfaceColor,
           content: Row(
             children: [
-              Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
-              SizedBox(width: 8),
+              const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
+              const SizedBox(width: 8),
               Text(
-                'Đã dọn dẹp sạch bộ nhớ đệm tạm thời!',
-                style: TextStyle(color: AppColors.darkTextPrimary),
+                'Temporary cache cleared successfully!',
+                style: TextStyle(color: context.textPrimary),
               ),
             ],
           ),
@@ -112,25 +113,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: const Text('Đổi tên hiển thị', style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16)),
+        backgroundColor: context.surfaceColor,
+        title: Text('Edit Display Name', style: TextStyle(color: context.textPrimary, fontSize: 16)),
         content: TextField(
           controller: controller,
-          style: const TextStyle(color: AppColors.darkTextPrimary),
-          decoration: const InputDecoration(
-            hintText: 'Nhập tên mới của bạn...',
-            hintStyle: TextStyle(color: AppColors.darkTextMuted),
+          style: TextStyle(color: context.textPrimary),
+          decoration: InputDecoration(
+            hintText: 'Enter your new display name...',
+            hintStyle: TextStyle(color: context.textMuted),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.darkTextSecondary)),
+            child: Text('Cancel', style: TextStyle(color: context.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Lưu thay đổi', style: TextStyle(color: Colors.white)),
+            child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -143,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         (failure) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${failure.message}'), backgroundColor: AppColors.error),
+              SnackBar(content: Text('Error: ${failure.message}'), backgroundColor: AppColors.error),
             );
           }
         },
@@ -151,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             setState(() => _currentUser = updated);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đã cập nhật tên hiển thị thành công!'), backgroundColor: AppColors.primary),
+              const SnackBar(content: Text('Display name updated successfully!'), backgroundColor: AppColors.primary),
             );
           }
         },
@@ -159,39 +160,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  /// Hộp thoại chọn Ngôn ngữ bản dịch mặc định (FR-14)
+  /// Hộp thoại chọn Ngôn ngữ bản dịch mặc định (Chỉ hỗ trợ Tiếng Anh EN)
   Future<void> _showLanguagePickerDialog() async {
-    final currentLang = _themeController.preferredLanguage;
-    final options = [
-      {'code': 'all', 'label': 'Tất cả (Ưu tiên Tiếng Việt VI -> EN)'},
-      {'code': 'vi', 'label': 'Chỉ bản dịch Tiếng Việt (VI)'},
-      {'code': 'en', 'label': 'Chỉ bản dịch Tiếng Anh (EN)'},
+    const options = [
+      {'code': 'en', 'label': 'English Only (EN)'},
     ];
 
     final selected = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: const Text(
-          'Ngôn ngữ bản dịch mặc định',
-          style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+        backgroundColor: context.surfaceColor,
+        title: Text(
+          'Comic Translation Language',
+          style: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: options.map((opt) {
-            final isSelected = opt['code'] == currentLang;
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                color: isSelected ? AppColors.primaryLight : AppColors.darkTextMuted,
+              leading: const Icon(
+                Icons.radio_button_checked_rounded,
+                color: AppColors.primaryLight,
               ),
               title: Text(
                 opt['label']!,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppColors.primaryLight : AppColors.darkTextPrimary,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryLight,
                 ),
               ),
               onTap: () => Navigator.pop(ctx, opt['code']),
@@ -208,35 +205,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getLanguageLabel(String code) {
-    switch (code) {
-      case 'vi':
-        return 'Chỉ Tiếng Việt (VI)';
-      case 'en':
-        return 'Chỉ Tiếng Anh (EN)';
-      default:
-        return 'Tất cả (Ưu tiên Tiếng Việt VI -> EN)';
-    }
+    return 'English Only (EN)';
   }
 
   Future<void> _handleLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: const Text('Đăng xuất tài khoản', style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16)),
-        content: const Text(
-          'Bạn có chắc chắn muốn đăng xuất khỏi Naomi không?',
-          style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+        backgroundColor: context.surfaceColor,
+        title: Text('Sign Out', style: TextStyle(color: context.textPrimary, fontSize: 16)),
+        content: Text(
+          'Are you sure you want to sign out of Naomi?',
+          style: TextStyle(color: context.textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ở lại', style: TextStyle(color: AppColors.darkTextSecondary)),
+            child: Text('Stay', style: TextStyle(color: context.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Đăng xuất', style: TextStyle(color: Colors.white)),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -257,21 +247,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = _currentUser;
-    final displayName = user?.displayName.isNotEmpty == true ? user!.displayName : 'Độc giả Naomi';
+    final displayName = user?.displayName.isNotEmpty == true ? user!.displayName : 'Naomi Reader';
     final email = user?.email.isNotEmpty == true ? user!.email : 'reader@naomi.app';
     final isGuest = user?.isGuest ?? false;
     final isDarkMode = _themeController.isDarkMode;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: context.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'HỒ SƠ & CÀI ĐẶT',
+        title: Text(
+          'PROFILE & SETTINGS',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.5,
-            color: AppColors.darkTextPrimary,
+            color: context.textPrimary,
           ),
         ),
       ),
@@ -282,9 +272,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.darkSurface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.darkBorder),
+              border: Border.all(color: context.borderColor),
             ),
             child: Row(
               children: [
@@ -326,23 +316,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               displayName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.darkTextPrimary,
+                                color: context.textPrimary,
                               ),
                             ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primaryLight),
-                            tooltip: 'Đổi tên hiển thị',
+                            tooltip: 'Edit display name',
                             onPressed: _showEditNameDialog,
                           ),
                         ],
                       ),
                       Text(
                         email,
-                        style: const TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
+                        style: TextStyle(fontSize: 12, color: context.textSecondary),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -358,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         child: Text(
-                          isGuest ? 'KHÁCH TRẢI NGHIỆM' : 'THÀNH VIÊN CHÍNH THỨC',
+                          isGuest ? 'GUEST READER' : 'OFFICIAL MEMBER',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -377,7 +367,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // 2. Nhóm Cài đặt Giao diện & Đọc
           const Text(
-            'TÙY CHỌN ỨNG DỤNG (FR-14)',
+            'APP PREFERENCES',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -388,24 +378,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
 
           Material(
-            color: AppColors.darkSurface,
+            color: context.surfaceColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.darkBorder),
+              side: BorderSide(color: context.borderColor),
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text(
-                    'Chế độ tối AMOLED',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
-                  ),
-                  subtitle: Text(
-                    isDarkMode
-                        ? 'Đang bật AMOLED Dark (#111116) tiết kiệm pin OLED (NFR-16)'
-                        : 'Đang dùng chế độ Sáng (Light Mode)',
-                    style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                  title: Text(
+                    'Dark Mode',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary),
                   ),
                   value: isDarkMode,
                   activeThumbColor: AppColors.primary,
@@ -414,17 +398,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     setState(() {});
                   },
                 ),
-                const Divider(height: 1, color: AppColors.darkBorder),
+                Divider(height: 1, color: context.borderColor),
                 ListTile(
-                  title: const Text(
-                    'Ngôn ngữ bản dịch mặc định',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
+                  title: Text(
+                    'Comic Translation Language',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary),
                   ),
                   subtitle: Text(
                     _getLanguageLabel(_themeController.preferredLanguage),
                     style: const TextStyle(fontSize: 11, color: AppColors.primaryLight),
                   ),
-                  trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.darkTextMuted),
+                  trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
                   onTap: _showLanguagePickerDialog,
                 ),
               ],
@@ -433,9 +417,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 24),
 
-          // 3. Nhóm Quản lý Bộ nhớ Thật (NFR-07 LRU Disk Cache)
+          // 3. Nhóm Quản lý Bộ nhớ Thật
           const Text(
-            'BỘ NHỚ & DỮ LIỆU CỤC BỘ (NFR-07)',
+            'STORAGE & LOCAL DATA',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -448,9 +432,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.darkSurface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.darkBorder),
+              border: Border.all(color: context.borderColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,12 +442,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Bộ nhớ đệm ảnh thật trên đĩa',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
+                    Text(
+                      'Image Cache on Disk',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.textPrimary),
                     ),
                     Text(
-                      _isLoadingCache ? 'Đang đo...' : '${_cacheSizeMb.toStringAsFixed(1)} MB / 500 MB',
+                      _isLoadingCache ? 'Calculating...' : '${_cacheSizeMb.toStringAsFixed(1)} MB / 500 MB',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryLight),
                     ),
                   ],
@@ -471,7 +455,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 10),
                 LinearProgressIndicator(
                   value: (_cacheSizeMb / 500.0).clamp(0.01, 1.0),
-                  backgroundColor: AppColors.darkBackground,
+                  backgroundColor: context.backgroundColor,
                   color: AppColors.primary,
                   minHeight: 6,
                   borderRadius: BorderRadius.circular(3),
@@ -486,7 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     icon: const Icon(Icons.delete_sweep_rounded, size: 18),
-                    label: const Text('Dọn dẹp bộ nhớ đệm ngay'),
+                    label: const Text('Clear Cache Now'),
                     onPressed: _clearRealCache,
                   ),
                 ),
@@ -507,7 +491,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text('Đăng xuất tài khoản', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700)),
               onPressed: _handleLogout,
             ),
           ),
@@ -515,17 +499,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 32),
 
           // 5. Thông tin đồ án & Phiên bản
-          const Center(
+          Center(
             child: Column(
               children: [
                 Text(
                   'NAOMI MANGA READER',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2, color: AppColors.darkTextMuted),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2, color: context.textMuted),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Phiên bản 1.0.0 (Production Build)',
-                  style: TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
+                  'Version 1.0.0 (Production Build)',
+                  style: TextStyle(fontSize: 11, color: context.textMuted),
                 ),
               ],
             ),

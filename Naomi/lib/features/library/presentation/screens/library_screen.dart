@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../comic/presentation/screens/comic_detail_screen.dart';
 import '../../../reader/presentation/screens/reader_screen.dart';
@@ -77,15 +78,15 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
         }
 
         return Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: context.backgroundColor,
           appBar: AppBar(
-            title: const Text(
-              'TỦ SÁCH CÁ NHÂN',
+            title: Text(
+              'MY LIBRARY',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.5,
-                color: AppColors.darkTextPrimary,
+                color: context.textPrimary,
               ),
             ),
             bottom: TabBar(
@@ -94,20 +95,20 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
               indicatorColor: AppColors.primary,
               indicatorWeight: 3,
               labelColor: AppColors.primaryLight,
-              unselectedLabelColor: AppColors.darkTextSecondary,
+              unselectedLabelColor: context.textSecondary,
               labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
               tabs: [
                 Tab(
                   icon: const Icon(Icons.favorite_rounded, size: 18),
-                  text: 'YÊU THÍCH ($bookmarkCount)',
+                  text: 'FAVORITES ($bookmarkCount)',
                 ),
                 Tab(
                   icon: const Icon(Icons.history_rounded, size: 18),
-                  text: 'LỊCH SỬ ($historyCount)',
+                  text: 'HISTORY ($historyCount)',
                 ),
                 Tab(
                   icon: const Icon(Icons.offline_pin_rounded, size: 18),
-                  text: 'ĐÃ TẢI ($downloadCount)',
+                  text: 'DOWNLOADS ($downloadCount)',
                 ),
               ],
             ),
@@ -137,12 +138,12 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                     children: [
                       const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                       const SizedBox(height: 12),
-                      Text(state.message, style: const TextStyle(color: AppColors.darkTextPrimary)),
+                      Text(state.message, style: TextStyle(color: context.textPrimary)),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                         onPressed: () => context.read<LibraryBloc>().add(const LoadLibraryEvent()),
-                        child: const Text('Tải lại', style: TextStyle(color: Colors.white)),
+                        child: const Text('Reload', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
@@ -163,16 +164,16 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_border_rounded, size: 64, color: AppColors.darkTextMuted.withValues(alpha: 0.5)),
+            Icon(Icons.favorite_border_rounded, size: 64, color: context.textMuted.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
-            const Text(
-              'Tủ truyện yêu thích đang trống.',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
+            Text(
+              'Your Favorites list is empty.',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Hãy thả tim những bộ truyện hay ở mục Khám phá nhé!',
-              style: TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
+            Text(
+              'Tap the heart icon on comics in Discover to save them here!',
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ],
         ),
@@ -181,7 +182,7 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
 
     return RefreshIndicator(
       color: AppColors.primary,
-      backgroundColor: AppColors.darkSurface,
+      backgroundColor: context.surfaceColor,
       onRefresh: () async {
         context.read<LibraryBloc>().add(const LoadLibraryEvent());
       },
@@ -220,8 +221,8 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                                 height: double.infinity,
                               )
                             : Container(
-                                color: AppColors.darkSurface,
-                                child: const Center(child: Icon(Icons.book_rounded, color: AppColors.darkTextMuted)),
+                                color: context.surfaceColor,
+                                child: Center(child: Icon(Icons.book_rounded, color: context.textMuted)),
                               ),
                       ),
                       Positioned(
@@ -253,13 +254,13 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.darkTextPrimary),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
                 ),
                 Text(
                   item.author,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
               ],
             ),
@@ -276,16 +277,16 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.history_toggle_off_rounded, size: 64, color: AppColors.darkTextMuted.withValues(alpha: 0.5)),
+            Icon(Icons.history_toggle_off_rounded, size: 64, color: context.textMuted.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
-            const Text(
-              'Chưa có lịch sử đọc truyện.',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
+            Text(
+              'No reading history yet.',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Những chương truyện bạn đang đọc dở sẽ xuất hiện tại đây.',
-              style: TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
+            Text(
+              'Chapters you start reading will automatically appear here.',
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ],
         ),
@@ -301,26 +302,26 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${state.history.length} tác phẩm đã xem',
-                style: const TextStyle(fontSize: 12, color: AppColors.darkTextMuted),
+                '${state.history.length} titles viewed',
+                style: TextStyle(fontSize: 12, color: context.textMuted),
               ),
               TextButton.icon(
-                icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: AppColors.darkTextMuted),
-                label: const Text('Xóa lịch sử', style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+                icon: Icon(Icons.delete_sweep_rounded, size: 16, color: context.textMuted),
+                label: Text('Clear History', style: TextStyle(color: context.textMuted, fontSize: 12)),
                 onPressed: () {
                   showDialog(
                     context: context,
                     builder: (dCtx) => AlertDialog(
-                      backgroundColor: AppColors.darkSurface,
-                      title: const Text('Xóa lịch sử đọc?', style: TextStyle(color: AppColors.darkTextPrimary)),
-                      content: const Text(
-                        'Bạn có chắc chắn muốn xóa toàn bộ lịch sử đọc truyện khỏi tài khoản này?',
-                        style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                      backgroundColor: context.surfaceColor,
+                      title: Text('Clear Reading History?', style: TextStyle(color: context.textPrimary)),
+                      content: Text(
+                        'Are you sure you want to clear all reading history for this account?',
+                        style: TextStyle(color: context.textSecondary, fontSize: 13),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dCtx),
-                          child: const Text('Hủy', style: TextStyle(color: AppColors.darkTextMuted)),
+                          child: Text('Cancel', style: TextStyle(color: context.textMuted)),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
@@ -328,7 +329,7 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                             Navigator.pop(dCtx);
                             context.read<LibraryBloc>().add(const ClearReadingHistoryEvent());
                           },
-                          child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+                          child: const Text('Clear', style: TextStyle(color: Colors.white)),
                         ),
                       ],
                     ),
@@ -343,7 +344,7 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
         Expanded(
           child: RefreshIndicator(
             color: AppColors.primary,
-            backgroundColor: AppColors.darkSurface,
+            backgroundColor: context.surfaceColor,
             onRefresh: () async {
               context.read<LibraryBloc>().add(const LoadLibraryEvent());
             },
@@ -355,10 +356,10 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Material(
-                    color: AppColors.darkSurface,
+                    color: context.surfaceColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
-                      side: const BorderSide(color: AppColors.darkBorder),
+                      side: BorderSide(color: context.borderColor),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
@@ -394,8 +395,8 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                                   : Container(
                                       width: 50,
                                       height: 70,
-                                      color: AppColors.darkBackground,
-                                      child: const Icon(Icons.book_rounded, color: AppColors.darkTextMuted),
+                                      color: context.backgroundColor,
+                                      child: Icon(Icons.book_rounded, color: context.textMuted),
                                     ),
                             ),
                             const SizedBox(width: 12),
@@ -408,16 +409,16 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                                     item.comicTitle,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.darkTextPrimary,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Chương ${item.chapterNumber} • Trang ${item.lastPageRead}/${item.totalPages}',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
+                                    'Chapter ${item.chapterNumber} • Page ${item.lastPageRead}/${item.totalPages}',
+                                    style: TextStyle(fontSize: 12, color: context.textSecondary),
                                   ),
                                   const SizedBox(height: 6),
                                   Row(
@@ -427,7 +428,7 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                                           borderRadius: BorderRadius.circular(3),
                                           child: LinearProgressIndicator(
                                             value: item.readPercentage.clamp(0.0, 1.0),
-                                            backgroundColor: AppColors.darkBorder,
+                                            backgroundColor: context.borderColor,
                                             valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                                             minHeight: 4,
                                           ),
@@ -451,7 +452,7 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
                             // Nút Đọc tiếp
                             IconButton(
                               icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 28),
-                              tooltip: 'Đọc tiếp',
+                              tooltip: 'Resume Reading',
                               onPressed: () {
                                 final bloc = context.read<LibraryBloc>();
                                 Navigator.push(
@@ -489,16 +490,16 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.download_for_offline_outlined, size: 64, color: AppColors.darkTextMuted.withValues(alpha: 0.5)),
+            Icon(Icons.download_for_offline_outlined, size: 64, color: context.textMuted.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
-            const Text(
-              'Chưa có chương nào được tải về máy.',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.darkTextPrimary),
+            Text(
+              'No downloaded chapters yet.',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Tải truyện về để đọc mượt mà kể cả khi không có mạng!',
-              style: TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
+            Text(
+              'Download chapters to read smoothly even without an internet connection!',
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ],
         ),
@@ -515,8 +516,8 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${state.downloads.length} chương ngoại tuyến ($totalPages trang ảnh)',
-                style: const TextStyle(fontSize: 12, color: AppColors.darkTextMuted),
+                '${state.downloads.length} offline chapters ($totalPages pages)',
+                style: TextStyle(fontSize: 12, color: context.textMuted),
               ),
               const Row(
                 children: [
@@ -537,30 +538,30 @@ class _LibraryViewState extends State<_LibraryView> with SingleTickerProviderSta
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Material(
-                  color: AppColors.darkSurface,
+                  color: context.surfaceColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: const BorderSide(color: AppColors.darkBorder),
+                    side: BorderSide(color: context.borderColor),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: AppColors.darkBackground,
-                      child: Icon(Icons.offline_pin_rounded, color: AppColors.success, size: 20),
+                    leading: CircleAvatar(
+                      backgroundColor: context.backgroundColor,
+                      child: const Icon(Icons.offline_pin_rounded, color: AppColors.success, size: 20),
                     ),
                     title: Text(
                       download.comicTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.darkTextPrimary),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.textPrimary),
                     ),
                     subtitle: Text(
-                      'Chương ${download.chapterNumber} • ${download.totalPages} trang',
-                      style: const TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
+                      'Chapter ${download.chapterNumber} • ${download.totalPages} pages',
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-                      tooltip: 'Xóa khỏi bộ nhớ',
+                      tooltip: 'Delete from storage',
                       onPressed: () {
                         context.read<LibraryBloc>().add(DeleteDownloadedChapterEvent(download.chapterId));
                       },

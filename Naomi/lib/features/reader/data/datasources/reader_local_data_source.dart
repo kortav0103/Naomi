@@ -68,7 +68,19 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
       final userId = await _getActiveUserId();
       final now = DateTime.now().toIso8601String();
 
-      // Sử dụng ConflictAlgorithm.replace để cập nhật nếu đã có bản ghi cũ cho (user_id, comic_id)
+      // 1. Đồng bộ thông tin bộ truyện vào bảng comics
+      await db.insert(
+        'comics',
+        {
+          'id': comicId,
+          'title': comicTitle,
+          'cover_url': coverUrl,
+          'updated_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 2. Sử dụng ConflictAlgorithm.replace để cập nhật nếu đã có bản ghi cũ cho (user_id, comic_id)
       await db.insert(
         'reading_history',
         {
@@ -86,8 +98,19 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+
+      // 3. Tự động dọn dẹp lịch sử: Giới hạn tối đa 100 bộ truyện đọc gần nhất cho mỗi tài khoản (Retention Policy)
+      await db.execute('''
+        DELETE FROM reading_history
+        WHERE user_id = ? AND id NOT IN (
+          SELECT id FROM reading_history
+          WHERE user_id = ?
+          ORDER BY updated_at DESC
+          LIMIT 100
+        )
+      ''', [userId, userId]);
     } catch (e) {
-      throw CacheException('Không thể lưu tiến trình đọc vào CSDL: $e');
+      throw CacheException('Unable to save reading progress to database: $e');
     }
   }
 
@@ -112,7 +135,7 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
       }
       return 1; // Mặc định nếu chưa đọc thì bắt đầu từ trang 1
     } catch (e) {
-      throw CacheException('Không thể nạp tiến trình đọc: $e');
+      throw CacheException('Unable to load reading progress: $e');
     }
   }
 
@@ -126,6 +149,7 @@ class ReaderLocalDataSourceImpl implements ReaderLocalDataSource {
         'pages',
         columns: ['file_path'],
         where: 'chapter_id = ? AND file_path IS NOT NULL',
+        whereArgs: [chapterId],
         orderBy: 'page_number ASC',
       );
 

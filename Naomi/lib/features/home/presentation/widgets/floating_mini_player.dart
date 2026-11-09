@@ -3,6 +3,7 @@ import 'package:just_audio/just_audio.dart';
 import '../../../../core/audio/ambient_audio_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../reader/presentation/widgets/ambient_audio_sheet.dart';
 
 class FloatingMiniPlayer extends StatelessWidget {
@@ -29,12 +30,12 @@ class FloatingMiniPlayer extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.darkSurface,
+                color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: Colors.black.withValues(alpha: context.isDarkMode ? 0.4 : 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -56,12 +57,12 @@ class FloatingMiniPlayer extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: isPlaying ? AppColors.primary : AppColors.darkBackground,
+                        color: isPlaying ? AppColors.primary : context.backgroundColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         isPlaying ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
-                        color: Colors.white,
+                        color: isPlaying ? Colors.white : AppColors.primaryLight,
                         size: 20,
                       ),
                     ),
@@ -76,15 +77,15 @@ class FloatingMiniPlayer extends StatelessWidget {
                             audioService.currentTrackTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.darkTextPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
-                          Text(
-                            'Nhạc nền Ambient (${audioService.currentTrackGenre})',
-                            style: const TextStyle(
+                          const Text(
+                            'Relaxing Ambient Audio',
+                            style: TextStyle(
                               fontSize: 10,
                               color: AppColors.primaryLight,
                               fontWeight: FontWeight.w500,
@@ -108,10 +109,10 @@ class FloatingMiniPlayer extends StatelessWidget {
                         }
                       },
                     ),
-                    // Nút Đóng hẳn mini player (Sửa dứt điểm lỗi nút X không đóng)
+                    // Nút Đóng hẳn mini player
                     IconButton(
-                      tooltip: 'Tắt nhạc & Đóng',
-                      icon: const Icon(Icons.close_rounded, color: AppColors.darkTextMuted, size: 20),
+                      tooltip: 'Stop & Close',
+                      icon: Icon(Icons.close_rounded, color: context.textMuted, size: 20),
                       onPressed: () {
                         audioService.stopAndDismiss();
                       },

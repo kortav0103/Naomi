@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../library/domain/entities/reading_history_item.dart';
 import '../../../library/domain/repositories/library_repository.dart';
@@ -87,152 +88,24 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
-  /// Tìm kiếm thông minh bằng hình ảnh khung tranh (FR-11 Visual Search - Zero Permission Picker)
-  void _showVisualSearchSheet(BuildContext context) {
-    final samples = [
-      {
-        'title': 'Sousou no Frieren (Khung tranh Phép thuật)',
-        'query': 'Sousou no Frieren',
-        'desc': 'Nhận diện: Elf Mage • Fantasy / Adventure (Độ khớp 98.4%)',
-        'icon': Icons.auto_awesome_rounded,
-      },
-      {
-        'title': 'Dungeon Meshi (Khung tranh Ẩm thực Hầm ngục)',
-        'query': 'Dungeon Meshi',
-        'desc': 'Nhận diện: Laios & Marcille • Fantasy / Comedy (Độ khớp 96.8%)',
-        'icon': Icons.restaurant_menu_rounded,
-      },
-      {
-        'title': 'Kusuriya no Hitorigoto (Dược Sư Tự Sự)',
-        'query': 'Kusuriya no Hitorigoto',
-        'desc': 'Nhận diện: Maomao • Mystery / Historical (Độ khớp 95.2%)',
-        'icon': Icons.local_florist_rounded,
-      },
-      {
-        'title': 'One Piece (Đảo Hải Tặc)',
-        'query': 'One Piece',
-        'desc': 'Nhận diện: Monkey D. Luffy • Action / Adventure (Độ khớp 99.1%)',
-        'icon': Icons.sailing_rounded,
-      },
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.darkSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetCtx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.darkBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Row(
-                  children: [
-                    Icon(Icons.image_search_rounded, color: AppColors.primaryLight, size: 22),
-                    SizedBox(width: 8),
-                    Text(
-                      'TÌM TRUYỆN BẰNG HÌNH ẢNH AI (FR-11)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.1,
-                        color: AppColors.darkTextPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Sử dụng System Photo Picker an toàn (Zero Storage Permission - NFR-12). Chọn một ảnh khung tranh để AI nhận diện bộ truyện:',
-                  style: TextStyle(fontSize: 12, color: AppColors.darkTextSecondary),
-                ),
-                const SizedBox(height: 12),
-                ...samples.map((item) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      dense: true,
-                      tileColor: AppColors.darkBackground,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: AppColors.darkBorder),
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                        child: Icon(item['icon'] as IconData, color: AppColors.primaryLight, size: 18),
-                      ),
-                      title: Text(
-                        item['title'] as String,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.darkTextPrimary),
-                      ),
-                      subtitle: Text(
-                        item['desc'] as String,
-                        style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.primaryLight),
-                      onTap: () {
-                        Navigator.pop(sheetCtx);
-                        final q = item['query'] as String;
-                        _searchController.text = q;
-                        setState(() {});
-                        context.read<DiscoverBloc>().add(SearchComicsEvent(q));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: AppColors.primary,
-                            content: Text('AI Visual Search đã nhận diện: "$q"'),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: context.backgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'KHÁM PHÁ TRUYỆN',
+        title: Text(
+          'DISCOVER COMICS',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.5,
-            color: AppColors.darkTextPrimary,
+            color: context.textPrimary,
           ),
         ),
         actions: [
           IconButton(
-            tooltip: 'Tìm bằng ảnh AI (FR-11)',
-            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryLight),
-            onPressed: () => _showVisualSearchSheet(context),
-          ),
-          IconButton(
-            tooltip: 'Làm mới danh mục',
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.darkTextSecondary),
+            tooltip: 'Refresh catalog',
+            icon: Icon(Icons.refresh_rounded, color: context.textSecondary),
             onPressed: () {
               _searchController.clear();
               setState(() => _selectedGenre = 'All');
@@ -243,7 +116,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       ),
       body: RefreshIndicator(
         color: AppColors.primary,
-        backgroundColor: AppColors.darkSurface,
+        backgroundColor: context.surfaceColor,
         onRefresh: () async {
           _searchController.clear();
           setState(() => _selectedGenre = 'All');
@@ -251,7 +124,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         },
         child: Column(
           children: [
-            // 1. Search Bar với Debounce 400ms (FR-01) & Camera AI Picker (FR-11)
+            // 1. Search Bar với Debounce 400ms (FR-01)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
@@ -261,40 +134,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   _onSearchChanged(val);
                 },
                 textInputAction: TextInputAction.search,
-                style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 14),
+                style: TextStyle(color: context.textPrimary, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm manga, tác giả, webtoon...',
-                  hintStyle: const TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+                  hintText: 'Search manga, authors, webtoons...',
+                  hintStyle: TextStyle(color: context.textMuted, fontSize: 14),
                   prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear_rounded, color: AppColors.darkTextMuted, size: 18),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear_rounded, color: context.textMuted, size: 18),
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('');
                             setState(() {});
                           },
-                        ),
-                      IconButton(
-                        tooltip: 'Tìm kiếm bằng hình ảnh (FR-11)',
-                        icon: const Icon(Icons.center_focus_weak_rounded, color: AppColors.primaryLight, size: 20),
-                        onPressed: () => _showVisualSearchSheet(context),
-                      ),
-                    ],
-                  ),
+                        )
+                      : null,
                   filled: true,
-                  fillColor: AppColors.darkSurface,
+                  fillColor: context.surfaceColor,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.darkBorder),
+                    borderSide: BorderSide(color: context.borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.darkBorder),
+                    borderSide: BorderSide(color: context.borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -325,14 +189,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? Colors.white : AppColors.darkTextSecondary,
+                        color: isSelected ? Colors.white : context.textSecondary,
                       ),
                     ),
                     selected: isSelected,
                     selectedColor: AppColors.primary,
-                    backgroundColor: AppColors.darkSurface,
+                    backgroundColor: context.surfaceColor,
                     side: BorderSide(
-                      color: isSelected ? AppColors.primary : AppColors.darkBorder,
+                      color: isSelected ? AppColors.primary : context.borderColor,
                     ),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     onSelected: (selected) {
@@ -362,15 +226,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               child: BlocBuilder<DiscoverBloc, DiscoverState>(
                 builder: (context, state) {
                   if (state is DiscoverLoading) {
-                    return const Center(
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: AppColors.primary),
-                          SizedBox(height: 16),
+                          const CircularProgressIndicator(color: AppColors.primary),
+                          const SizedBox(height: 16),
                           Text(
-                            'Đang tải truyện từ MangaDex...',
-                            style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                            'Loading comics from MangaDex...',
+                            style: TextStyle(color: context.textSecondary, fontSize: 13),
                           ),
                         ],
                       ),
@@ -381,11 +245,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.search_off_rounded, size: 64, color: AppColors.darkTextMuted),
+                            Icon(Icons.search_off_rounded, size: 64, color: context.textMuted),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Không tìm thấy bộ truyện nào phù hợp.',
-                              style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 15),
+                            Text(
+                              'No matching comics found.',
+                              style: TextStyle(color: context.textPrimary, fontSize: 15),
                             ),
                             const SizedBox(height: 8),
                             TextButton(
@@ -394,7 +258,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                 setState(() => _selectedGenre = 'All');
                                 context.read<DiscoverBloc>().add(const LoadTrendingComicsEvent());
                               },
-                              child: const Text('Xem danh mục thịnh hành', style: TextStyle(color: AppColors.primary)),
+                              child: const Text('View Trending Catalog', style: TextStyle(color: AppColors.primary)),
                             ),
                           ],
                         ),
@@ -410,20 +274,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       slivers: [
                         // Carousel Thịnh Hành Nổi Bật (Trending Carousel)
                         if (showCarousel) ...[
-                          const SliverToBoxAdapter(
+                          SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                               child: Row(
                                 children: [
-                                  Icon(Icons.local_fire_department_rounded, color: AppColors.warning, size: 20),
-                                  SizedBox(width: 6),
+                                  const Icon(Icons.local_fire_department_rounded, color: AppColors.warning, size: 20),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    'NỔI BẬT TRONG TUẦN',
+                                    'FEATURED THIS WEEK',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 1.1,
-                                      color: AppColors.darkTextPrimary,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -453,7 +317,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                       width: 110,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: AppColors.darkBorder),
+                                        border: Border.all(color: context.borderColor),
                                       ),
                                       clipBehavior: Clip.antiAlias,
                                       child: Stack(
@@ -465,7 +329,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                               fit: BoxFit.cover,
                                             )
                                           else
-                                            Container(color: AppColors.darkSurface),
+                                            Container(color: context.surfaceColor),
                                           Container(
                                             decoration: const BoxDecoration(
                                               gradient: LinearGradient(
@@ -511,19 +375,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                               children: [
                                 Text(
                                   state.activeFilterTitle,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.darkTextPrimary,
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 Row(
                                   children: [
                                     Text(
-                                      '${state.comics.length} tác phẩm',
-                                      style: const TextStyle(
+                                      '${state.comics.length} titles',
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.darkTextMuted,
+                                        color: context.textMuted,
                                       ),
                                     ),
                                     if (!state.hasReachedMax) ...[
@@ -531,7 +395,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                       InkWell(
                                         onTap: () => context.read<DiscoverBloc>().add(const LoadMoreComicsEvent()),
                                         child: const Text(
-                                          'Xem thêm >',
+                                          'See more >',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
@@ -603,10 +467,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           children: [
                             const Icon(Icons.cloud_off_rounded, size: 64, color: AppColors.warning),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Oops! Không có kết nối Internet',
+                            Text(
+                              'Oops! No Internet Connection',
                               style: TextStyle(
-                                color: AppColors.darkTextPrimary,
+                                color: context.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -615,7 +479,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             Text(
                               state.message,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                              style: TextStyle(color: context.textSecondary, fontSize: 13),
                             ),
                             const SizedBox(height: 20),
                             Row(
@@ -623,12 +487,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                               children: [
                                 OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.darkTextPrimary,
-                                    side: const BorderSide(color: AppColors.darkBorder),
+                                    foregroundColor: context.textPrimary,
+                                    side: BorderSide(color: context.borderColor),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
                                   icon: const Icon(Icons.refresh_rounded, size: 18),
-                                  label: const Text('Thử lại'),
+                                  label: const Text('Retry'),
                                   onPressed: () => context.read<DiscoverBloc>().add(const LoadTrendingComicsEvent()),
                                 ),
                                 const SizedBox(width: 12),
@@ -639,7 +503,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
                                   icon: const Icon(Icons.offline_pin_rounded, size: 18),
-                                  label: const Text('Mở Kho Ngoại Tuyến'),
+                                  label: const Text('Open Offline Library'),
                                   onPressed: () {
                                     sl<ThemeController>().navigateToOfflineLibrary();
                                   },
@@ -667,7 +531,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.darkSurface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
         boxShadow: [
@@ -693,8 +557,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 : Container(
                     width: 52,
                     height: 72,
-                    color: AppColors.darkBackground,
-                    child: const Icon(Icons.book_rounded, color: AppColors.darkTextMuted),
+                    color: context.backgroundColor,
+                    child: Icon(Icons.book_rounded, color: context.textMuted),
                   ),
           ),
           const SizedBox(width: 12),
@@ -713,7 +577,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Text(
-                        'TIẾP TỤC ĐỌC',
+                        'CONTINUE READING',
                         style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -729,23 +593,23 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   item.comicTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.darkTextPrimary,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Chương ${item.chapterNumber} • Trang ${item.lastPageRead}/${item.totalPages}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                  'Chapter ${item.chapterNumber} • Page ${item.lastPageRead}/${item.totalPages}',
+                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                 ),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
                     value: item.readPercentage.clamp(0.0, 1.0),
-                    backgroundColor: AppColors.darkBorder,
+                    backgroundColor: context.borderColor,
                     valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     minHeight: 4,
                   ),
@@ -761,7 +625,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.play_arrow_rounded),
-            tooltip: 'Đọc tiếp ngay',
+            tooltip: 'Continue reading now',
             onPressed: () {
               Navigator.push(
                 context,

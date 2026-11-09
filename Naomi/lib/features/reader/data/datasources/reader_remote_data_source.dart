@@ -22,10 +22,10 @@ class ReaderRemoteDataSourceImpl implements ReaderRemoteDataSource {
         final data = response.data as Map<String, dynamic>;
         return ChapterPagesModel.fromJson(data, chapterId: chapterId);
       } else {
-        throw ServerException('Lỗi tải trang truyện: ${response.statusCode}');
+        throw ServerException('Error loading chapter pages: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw ServerException(e.message ?? 'Lỗi kết nối MangaDex CDN');
+      throw ServerException(e.message ?? 'MangaDex CDN connection error');
     }
   }
 }

@@ -14,23 +14,23 @@ class FakeAuthRepository implements AuthRepository {
 
   static final tUser = UserEntity(
     id: 'user-001',
-    email: 'kiet@hcmut.edu.vn',
-    displayName: 'Nguyễn Tuấn Kiệt',
+    email: 'reader@naomi.app',
+    displayName: 'Alex Mercer',
     isGuest: false,
     createdAt: DateTime(2026, 11, 6),
   );
 
   static final tGuest = UserEntity(
-    id: 'guest_user',
-    email: 'guest@naomi.local',
-    displayName: 'Độc giả Khách',
+    id: 'guest_default',
+    email: '',
+    displayName: 'Guest Reader',
     isGuest: true,
     createdAt: DateTime(2026, 11, 6),
   );
 
   @override
   Future<Either<Failure, UserEntity?>> getCurrentUser() async {
-    if (shouldFail) return const Left(CacheFailure('Chưa đăng nhập'));
+    if (shouldFail) return const Left(CacheFailure('Not logged in'));
     return Right(tUser);
   }
 
@@ -39,7 +39,7 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    if (shouldFail) return const Left(CacheFailure('Email hoặc mật khẩu không chính xác.'));
+    if (shouldFail) return const Left(AuthFailure('Incorrect email or password.'));
     return Right(tUser);
   }
 
@@ -49,7 +49,7 @@ class FakeAuthRepository implements AuthRepository {
     required String password,
     required String displayName,
   }) async {
-    if (shouldFail) return const Left(CacheFailure('Email đã tồn tại.'));
+    if (shouldFail) return const Left(AuthFailure('Email already exists.'));
     return Right(tUser.copyWith(email: email, displayName: displayName));
   }
 
@@ -66,7 +66,6 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<Either<Failure, UserEntity>> updateProfile({
     required String displayName,
-    String? avatarUrl,
   }) async {
     return Right(tUser.copyWith(displayName: displayName));
   }
@@ -74,50 +73,62 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<Either<Failure, void>> resetPassword({
     required String email,
-    required String newPassword,
   }) async {
-    if (shouldFail) return const Left(CacheFailure('Không tìm thấy tài khoản với email này.'));
+    if (shouldFail) return const Left(AuthFailure('Account not found with this email.'));
     return const Right(null);
   }
 }
 
 void main() {
-  group('AuthBloc Unit Tests (US-00 / FR-00)', () {
-    test('Trạng thái khởi tạo của AuthBloc phải là AuthInitial', () {
+  group('AuthBloc Unit Tests', () {
+    test('Initial state of AuthBloc should be AuthInitial', () {
       final bloc = AuthBloc(authRepository: FakeAuthRepository());
       expect(bloc.state, equals(const AuthInitial()));
       bloc.close();
     });
 
-    test('Phát ra [AuthLoading, Authenticated] khi đăng nhập thành công', () async {
+    test('Emits [Authenticated] on CheckAuthEvent when user exists', () async {
       final bloc = AuthBloc(authRepository: FakeAuthRepository());
 
       expectLater(
         bloc.stream,
         emitsInOrder([
-          const AuthLoading(),
-          Authenticated(FakeAuthRepository.tUser),
+          Authenticated(FakeAuthRepository.tUser, isGuest: false),
         ]),
       );
 
-      bloc.add(const LoginSubmittedEvent(email: 'kiet@hcmut.edu.vn', password: 'password123'));
+      bloc.add(const CheckAuthEvent());
     });
 
-    test('Phát ra [AuthLoading, Authenticated(isGuest: true)] khi chọn Chế độ Khách', () async {
+    test('Emits [AuthLoading, Authenticated] on successful login', () async {
       final bloc = AuthBloc(authRepository: FakeAuthRepository());
 
       expectLater(
         bloc.stream,
         emitsInOrder([
           const AuthLoading(),
-          Authenticated(FakeAuthRepository.tGuest),
+          Authenticated(FakeAuthRepository.tUser, isGuest: false),
+        ]),
+      );
+
+      bloc.add(const LoginSubmittedEvent(email: 'reader@naomi.app', password: 'password123'));
+    });
+
+    test('Emits [AuthLoading, Authenticated(isGuest: true)] on continue as guest', () async {
+      final bloc = AuthBloc(authRepository: FakeAuthRepository());
+
+      expectLater(
+        bloc.stream,
+        emitsInOrder([
+          const AuthLoading(),
+          Authenticated(FakeAuthRepository.tGuest, isGuest: true),
         ]),
       );
 
       bloc.add(const GuestLoginEvent());
     });
 
-    test('Phát ra [AuthLoading, PasswordResetSuccess] khi khôi phục mật khẩu thành công', () async {
+    test('Emits [AuthLoading, PasswordResetSuccess] on successful password reset', () async {
       final bloc = AuthBloc(authRepository: FakeAuthRepository());
 
       expectLater(
@@ -128,10 +139,21 @@ void main() {
         ]),
       );
 
-      bloc.add(const ResetPasswordSubmittedEvent(
-        email: 'kiet@hcmut.edu.vn',
-        newPassword: 'newPassword123',
-      ));
+      bloc.add(const ResetPasswordSubmittedEvent('reader@naomi.app'));
+    });
+
+    test('Emits [AuthLoading, Unauthenticated] on logout', () async {
+      final bloc = AuthBloc(authRepository: FakeAuthRepository());
+
+      expectLater(
+        bloc.stream,
+        emitsInOrder([
+          const AuthLoading(),
+          const Unauthenticated(),
+        ]),
+      );
+
+      bloc.add(const LogoutEvent());
     });
   });
 }

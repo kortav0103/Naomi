@@ -28,7 +28,7 @@ abstract class ComicRepository {
   /// Lấy danh sách các chương của một bộ truyện (FR-10)
   Future<Either<Failure, List<Chapter>>> getComicChapters({
     required String comicId,
-    List<String> languages = const ['vi', 'en'],
+    List<String> languages = const ['en'],
   });
 
   /// Lấy thông tin chi tiết một bộ truyện

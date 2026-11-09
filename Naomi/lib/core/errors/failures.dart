@@ -10,17 +10,24 @@ abstract class Failure extends Equatable {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure([super.message = 'Không thể kết nối đến máy chủ MangaDex. Vui lòng thử lại sau.']);
+  const ServerFailure([super.message = 'Unable to connect to MangaDex server. Please try again later.']);
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure([super.message = 'Bạn đang ngoại tuyến. Vui lòng kiểm tra lại kết nối mạng.']);
+  const NetworkFailure([super.message = 'You are offline. Please check your internet connection.']);
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure([super.message = 'Không thể nạp dữ liệu từ bộ nhớ thiết bị.']);
+  const CacheFailure([super.message = 'Unable to load data from device storage.']);
 }
 
 class AuthFailure extends Failure {
-  const AuthFailure([super.message = 'Xác thực tài khoản không thành công.']);
+  const AuthFailure([super.message = 'Account authentication failed.']);
+}
+
+/// Đăng ký thành công nhưng cần xác nhận email trước khi đăng nhập
+class EmailConfirmationRequiredFailure extends AuthFailure {
+  const EmailConfirmationRequiredFailure([
+    super.message = 'Account created! Please check your inbox to confirm your email, then sign in.',
+  ]);
 }

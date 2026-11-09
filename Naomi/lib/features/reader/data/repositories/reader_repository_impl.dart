@@ -39,7 +39,7 @@ class ReaderRepositoryImpl implements ReaderRepository {
 
     // 2. Nếu chưa tải ngoại tuyến thì kiểm tra kết nối mạng
     if (!await _isConnected()) {
-      return const Left(NetworkFailure('Không có kết nối mạng để tải các trang truyện.'));
+      return const Left(NetworkFailure('No internet connection to load chapter pages.'));
     }
 
     // 3. Tải online từ API MangaDex

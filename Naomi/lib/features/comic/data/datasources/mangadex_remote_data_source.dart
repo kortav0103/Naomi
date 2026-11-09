@@ -8,12 +8,20 @@ abstract class MangaDexRemoteDataSource {
   Future<List<ComicModel>> getTrendingComics({int limit = 20, int offset = 0});
   Future<List<ComicModel>> searchComics({required String query, int limit = 20, int offset = 0});
   Future<List<ComicModel>> getComicsByGenre({required String genreTagId, int limit = 20, int offset = 0});
-  Future<List<ChapterModel>> getComicChapters({required String comicId, List<String> languages = const ['vi', 'en']});
+  Future<List<ChapterModel>> getComicChapters({required String comicId, List<String> languages = const ['en']});
   Future<ComicModel> getComicDetail({required String comicId});
 }
 
 class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
   final DioClient client;
+
+  /// Danh sách nhãn kiểm duyệt mở rộng không giới hạn: mở khóa toàn bộ kho truyện MangaDex
+  static const List<String> _unrestrictedContentRatings = [
+    'safe',
+    'suggestive',
+    'erotica',
+    'pornographic',
+  ];
 
   MangaDexRemoteDataSourceImpl({required this.client});
 
@@ -27,7 +35,8 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           'offset': offset,
           'includes[]': ['cover_art', 'author', 'artist'],
           'order[followedCount]': 'desc',
-          'contentRating[]': ['safe', 'suggestive'],
+          'contentRating[]': _unrestrictedContentRatings,
+          'availableTranslatedLanguage[]': ['en'],
           'hasAvailableChapters': 'true',
         },
       );
@@ -36,10 +45,10 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
         final List<dynamic> data = response.data['data'] as List<dynamic>? ?? [];
         return data.map((json) => ComicModel.fromJson(json as Map<String, dynamic>)).toList();
       } else {
-        throw ServerException('Lỗi tải truyện thịnh hành: ${response.statusCode}');
+        throw ServerException('Error loading trending comics: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw ServerException(e.message ?? 'Lỗi kết nối MangaDex');
+      throw ServerException(e.message ?? 'MangaDex connection error');
     }
   }
 
@@ -54,7 +63,8 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           'offset': offset,
           'includes[]': ['cover_art', 'author', 'artist'],
           'order[relevance]': 'desc',
-          'contentRating[]': ['safe', 'suggestive'],
+          'contentRating[]': _unrestrictedContentRatings,
+          'availableTranslatedLanguage[]': ['en'],
           'hasAvailableChapters': 'true',
         },
       );
@@ -63,10 +73,10 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
         final List<dynamic> data = response.data['data'] as List<dynamic>? ?? [];
         return data.map((json) => ComicModel.fromJson(json as Map<String, dynamic>)).toList();
       } else {
-        throw ServerException('Lỗi tìm kiếm truyện: ${response.statusCode}');
+        throw ServerException('Error searching comics: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw ServerException(e.message ?? 'Lỗi kết nối MangaDex');
+      throw ServerException(e.message ?? 'MangaDex connection error');
     }
   }
 
@@ -81,7 +91,8 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           'offset': offset,
           'includes[]': ['cover_art', 'author', 'artist'],
           'order[followedCount]': 'desc',
-          'contentRating[]': ['safe', 'suggestive'],
+          'contentRating[]': _unrestrictedContentRatings,
+          'availableTranslatedLanguage[]': ['en'],
           'hasAvailableChapters': 'true',
         },
       );
@@ -90,17 +101,17 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
         final List<dynamic> data = response.data['data'] as List<dynamic>? ?? [];
         return data.map((json) => ComicModel.fromJson(json as Map<String, dynamic>)).toList();
       } else {
-        throw ServerException('Lỗi lọc theo thể loại: ${response.statusCode}');
+        throw ServerException('Error filtering by genre: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw ServerException(e.message ?? 'Lỗi kết nối MangaDex');
+      throw ServerException(e.message ?? 'MangaDex connection error');
     }
   }
 
   @override
   Future<List<ChapterModel>> getComicChapters({
     required String comicId,
-    List<String> languages = const ['vi', 'en'],
+    List<String> languages = const ['en'],
   }) async {
     try {
       final List<ChapterModel> allChapters = [];
@@ -113,6 +124,7 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           '/manga/$comicId/feed',
           queryParameters: {
             'translatedLanguage[]': languages,
+            'contentRating[]': _unrestrictedContentRatings,
             'order[chapter]': 'asc',
             'limit': limit,
             'offset': offset,
@@ -129,13 +141,13 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
           );
           offset += limit;
         } else {
-          throw ServerException('Lỗi tải danh sách chương: ${response.statusCode}');
+          throw ServerException('Error loading chapter list: ${response.statusCode}');
         }
       } while (offset < total && offset < 2500);
 
       return allChapters;
     } on DioException catch (e) {
-      throw ServerException(e.message ?? 'Lỗi kết nối MangaDex');
+      throw ServerException(e.message ?? 'MangaDex connection error');
     }
   }
 
@@ -153,10 +165,10 @@ class MangaDexRemoteDataSourceImpl implements MangaDexRemoteDataSource {
         final data = response.data['data'] as Map<String, dynamic>;
         return ComicModel.fromJson(data);
       } else {
-        throw ServerException('Lỗi tải chi tiết truyện: ${response.statusCode}');
+        throw ServerException('Error loading comic details: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw ServerException(e.message ?? 'Lỗi kết nối MangaDex');
+      throw ServerException(e.message ?? 'MangaDex connection error');
     }
   }
 }

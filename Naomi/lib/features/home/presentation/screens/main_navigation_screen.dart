@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../comic/presentation/bloc/discover/discover_bloc.dart';
 import '../../../comic/presentation/screens/discover_screen.dart';
@@ -36,7 +36,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         final currentIndex = _themeController.mainNavIndex;
 
         return Scaffold(
-          backgroundColor: AppColors.darkBackground,
+          backgroundColor: context.backgroundColor,
           body: IndexedStack(
             index: currentIndex,
             children: _screens,
@@ -47,34 +47,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               // Mini Player nổi toàn cục phát nhạc nền Ambient (FR-05 & FR-09)
               const FloatingMiniPlayer(),
               Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(color: AppColors.darkBorder, width: 1),
+                    top: BorderSide(color: context.borderColor, width: 1),
                   ),
                 ),
                 child: NavigationBar(
                   selectedIndex: currentIndex,
-                  backgroundColor: AppColors.darkBackground,
-                  indicatorColor: AppColors.primary.withValues(alpha: 0.2),
                   elevation: 0,
                   onDestinationSelected: (index) {
                     _themeController.setMainNavIndex(index);
                   },
                   destinations: const [
                     NavigationDestination(
-                      icon: Icon(Icons.explore_outlined, color: AppColors.darkTextSecondary),
-                      selectedIcon: Icon(Icons.explore_rounded, color: AppColors.primaryLight),
-                      label: 'Khám phá',
+                      icon: Icon(Icons.explore_outlined),
+                      selectedIcon: Icon(Icons.explore_rounded),
+                      label: 'Discover',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.bookmark_border_rounded, color: AppColors.darkTextSecondary),
-                      selectedIcon: Icon(Icons.bookmark_rounded, color: AppColors.primaryLight),
-                      label: 'Tủ sách',
+                      icon: Icon(Icons.bookmark_border_rounded),
+                      selectedIcon: Icon(Icons.bookmark_rounded),
+                      label: 'Library',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.settings_outlined, color: AppColors.darkTextSecondary),
-                      selectedIcon: Icon(Icons.settings_rounded, color: AppColors.primaryLight),
-                      label: 'Cài đặt',
+                      icon: Icon(Icons.settings_outlined),
+                      selectedIcon: Icon(Icons.settings_rounded),
+                      label: 'Settings',
                     ),
                   ],
                 ),

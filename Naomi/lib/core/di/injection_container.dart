@@ -1,11 +1,14 @@
-import '../audio/ambient_audio_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../audio/ambient_audio_service.dart';
+import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
 import '../network/dio_client.dart';
 import '../theme/theme_controller.dart';
 import '../../features/auth/data/datasources/auth_local_data_source.dart';
+import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -45,19 +48,46 @@ Future<void> init() async {
   }
 
   //! 1. Core Services & External
-  sl.registerLazySingleton<ThemeController>(() => ThemeController());
+  try {
+    Supabase.instance;
+  } catch (_) {
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        // ignore: deprecated_member_use
+        anonKey: SupabaseConfig.anonKey,
+      );
+    } catch (_) {
+      // Bỏ qua nếu môi trường test không có native channel
+    }
+  }
+
+  sl.registerLazySingleton<SupabaseClient>(() {
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return SupabaseClient(SupabaseConfig.url, SupabaseConfig.anonKey);
+    }
+  });
+  sl.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
+  sl.registerLazySingleton<ThemeController>(() => ThemeController(secureStorage: sl()));
   sl.registerLazySingleton<DioClient>(() => DioClient());
   sl.registerLazySingleton<DatabaseHelper>(() => DatabaseHelper.instance);
-  sl.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
   sl.registerLazySingleton<Connectivity>(() => Connectivity());
   sl.registerLazySingleton<AmbientAudioService>(() => AmbientAudioService());
 
-  //! 2. Feature: Authentication Module (FR-00, NFR-05, NFR-10)
+  //! 2. Feature: Authentication Module (FR-00, NFR-05, NFR-10, Supabase Cloud Auth)
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSourceImpl(supabase: sl()),
+  );
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(secureStorage: sl()),
   );
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(localDataSource: sl()),
+    () => AuthRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+    ),
   );
   sl.registerFactory(
     () => AuthBloc(authRepository: sl()),
@@ -164,4 +194,7 @@ Future<void> init() async {
       repository: sl(),
     ),
   );
+
+  // Nạp cấu hình theme và tùy chọn người dùng đã lưu
+  await sl<ThemeController>().loadPreferences();
 }

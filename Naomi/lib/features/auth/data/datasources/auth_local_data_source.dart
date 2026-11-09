@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/user_model.dart';
@@ -7,24 +7,31 @@ abstract class AuthLocalDataSource {
   Future<UserModel?> getCurrentUser();
   Future<void> saveCurrentUser(UserModel user);
   Future<void> clearSession();
+
+  /// Đăng nhập ngoại tuyến bằng tài khoản demo (chỉ khả dụng ở Debug build)
   Future<UserModel> login({required String email, required String password});
-  Future<UserModel> signUp({
-    required String email,
-    required String password,
-    required String displayName,
-  });
   Future<UserModel> createGuestSession();
+
+  /// Cập nhật hồ sơ cục bộ cho phiên Khách / phiên ngoại tuyến
   Future<UserModel> updateProfile({required String displayName});
-  Future<void> resetPassword({required String email, required String newPassword});
 }
 
 class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   final FlutterSecureStorage secureStorage;
 
-  static const String _keyCurrentUser = 'naomi_current_user';
-  static const String _keyRegisteredAccounts = 'naomi_registered_accounts';
+  /// Cho phép bật/tắt tài khoản demo (mặc định: chỉ bật khi chạy Debug build)
+  final bool enableDemoAccount;
 
-  AuthLocalDataSourceImpl({required this.secureStorage});
+  static const String _keyCurrentUser = 'naomi_current_user';
+
+  // Tài khoản mẫu mặc định phục vụ kiểm thử / demo (chỉ hoạt động ở Debug build)
+  static const String demoEmail = 'reader@naomi.app';
+  static const String demoPassword = 'naomi123456';
+
+  AuthLocalDataSourceImpl({
+    required this.secureStorage,
+    this.enableDemoAccount = kDebugMode,
+  });
 
   @override
   Future<UserModel?> getCurrentUser() async {
@@ -34,7 +41,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         return UserModel.fromJsonString(userStr);
       }
       return null;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -47,7 +54,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         value: user.toJsonString(),
       );
     } catch (e) {
-      throw CacheException('Không thể lưu thông tin phiên đăng nhập: $e');
+      throw CacheException('Unable to save login session: $e');
     }
   }
 
@@ -56,7 +63,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     try {
       await secureStorage.delete(key: _keyCurrentUser);
     } catch (e) {
-      throw CacheException('Không thể xóa phiên đăng nhập: $e');
+      throw CacheException('Unable to clear login session: $e');
     }
   }
 
@@ -65,87 +72,25 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     required String email,
     required String password,
   }) async {
-    try {
-      final accountsStr = await secureStorage.read(key: _keyRegisteredAccounts);
-      final Map<String, dynamic> accounts = accountsStr != null
-          ? jsonDecode(accountsStr) as Map<String, dynamic>
-          : {};
+    final normalizedEmail = email.trim().toLowerCase();
 
-      final normalizedEmail = email.trim().toLowerCase();
-
-      // Kiểm tra tài khoản đã đăng ký hoặc cho phép tài khoản mẫu mặc định
-      if (accounts.containsKey(normalizedEmail)) {
-        final accountData = accounts[normalizedEmail] as Map<String, dynamic>;
-        if (accountData['password'] == password) {
-          final user = UserModel.fromJson(accountData['profile'] as Map<String, dynamic>);
-          await saveCurrentUser(user);
-          return user;
-        } else {
-          throw const AuthException('Mật khẩu không chính xác. Vui lòng thử lại!');
-        }
-      } else if (normalizedEmail == 'reader@naomi.app') {
-        // Tài khoản mẫu định sẵn cho chấm điểm / chạy thử
-        final user = UserModel(
-          id: 'user_default_reader',
-          email: 'reader@naomi.app',
-          displayName: 'Độc giả Naomi',
-          isGuest: false,
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        );
-        await saveCurrentUser(user);
-        return user;
-      } else {
-        throw const AuthException('Tài khoản chưa được đăng ký trong hệ thống!');
-      }
-    } on AuthException {
-      rethrow;
-    } catch (e) {
-      throw AuthException('Lỗi đăng nhập: $e');
+    if (!enableDemoAccount || normalizedEmail != demoEmail) {
+      throw const AuthException('Account is not registered in the system!');
     }
-  }
-
-  @override
-  Future<UserModel> signUp({
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
-    try {
-      final accountsStr = await secureStorage.read(key: _keyRegisteredAccounts);
-      final Map<String, dynamic> accounts = accountsStr != null
-          ? jsonDecode(accountsStr) as Map<String, dynamic>
-          : {};
-
-      final normalizedEmail = email.trim().toLowerCase();
-      if (accounts.containsKey(normalizedEmail)) {
-        throw const AuthException('Địa chỉ Email này đã được đăng ký trước đó!');
-      }
-
-      final newUser = UserModel(
-        id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
-        email: normalizedEmail,
-        displayName: displayName.trim().isNotEmpty ? displayName.trim() : 'Độc giả Naomi',
-        isGuest: false,
-        createdAt: DateTime.now(),
-      );
-
-      accounts[normalizedEmail] = {
-        'password': password,
-        'profile': newUser.toJson(),
-      };
-
-      await secureStorage.write(
-        key: _keyRegisteredAccounts,
-        value: jsonEncode(accounts),
-      );
-
-      await saveCurrentUser(newUser);
-      return newUser;
-    } on AuthException {
-      rethrow;
-    } catch (e) {
-      throw AuthException('Lỗi đăng ký tài khoản: $e');
+    if (password != demoPassword) {
+      throw const AuthException('Incorrect demo account password!');
     }
+
+    final defaultUser = UserModel(
+      id: 'user_default_reader',
+      email: demoEmail,
+      displayName: 'Naomi Reader',
+      isGuest: false,
+      isEmailVerified: true,
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
+    );
+    await saveCurrentUser(defaultUser);
+    return defaultUser;
   }
 
   @override
@@ -156,105 +101,48 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         return existingUser;
       }
 
+      // Đồng bộ ID 'guest_default' với cấu trúc DatabaseHelper SQLite
       final guestUser = UserModel(
-        id: 'guest_${DateTime.now().millisecondsSinceEpoch}',
-        email: 'guest@naomi.local',
-        displayName: 'Khách Trải Nghiệm',
+        id: 'guest_default',
+        email: '',
+        displayName: 'Guest Reader',
         isGuest: true,
+        isEmailVerified: false,
         createdAt: DateTime.now(),
       );
 
       await saveCurrentUser(guestUser);
       return guestUser;
     } catch (e) {
-      throw AuthException('Lỗi khởi tạo phiên Khách: $e');
+      throw AuthException('Error creating Guest session: $e');
     }
   }
 
   @override
   Future<UserModel> updateProfile({required String displayName}) async {
+    final current = await getCurrentUser();
+    if (current == null) {
+      throw const AuthException('Active login session not found');
+    }
+    if (displayName.trim().isEmpty) {
+      throw const AuthException('Display name cannot be empty');
+    }
+
+    final updated = UserModel(
+      id: current.id,
+      email: current.email,
+      displayName: displayName.trim(),
+      avatarUrl: current.avatarUrl,
+      isGuest: current.isGuest,
+      isEmailVerified: current.isEmailVerified,
+      createdAt: current.createdAt,
+    );
+
     try {
-      final current = await getCurrentUser();
-      if (current == null) {
-        throw const AuthException('Không tìm thấy phiên đăng nhập');
-      }
-
-      final updated = UserModel(
-        id: current.id,
-        email: current.email,
-        displayName: displayName.trim(),
-        avatarUrl: current.avatarUrl,
-        isGuest: current.isGuest,
-        createdAt: current.createdAt,
-      );
-
       await saveCurrentUser(updated);
-
-      if (!current.isGuest) {
-        final accountsStr = await secureStorage.read(key: _keyRegisteredAccounts);
-        if (accountsStr != null) {
-          final Map<String, dynamic> accounts = jsonDecode(accountsStr) as Map<String, dynamic>;
-          final emailKey = current.email.toLowerCase();
-          if (accounts.containsKey(emailKey)) {
-            final acc = accounts[emailKey] as Map<String, dynamic>;
-            acc['profile'] = updated.toJson();
-            await secureStorage.write(key: _keyRegisteredAccounts, value: jsonEncode(accounts));
-          }
-        }
-      }
-
-      return updated;
-    } catch (e) {
-      throw AuthException('Không thể cập nhật hồ sơ: $e');
+    } on CacheException catch (e) {
+      throw AuthException(e.message);
     }
-  }
-
-  @override
-  Future<void> resetPassword({
-    required String email,
-    required String newPassword,
-  }) async {
-    try {
-      final normalizedEmail = email.trim().toLowerCase();
-      if (normalizedEmail.isEmpty || !normalizedEmail.contains('@')) {
-        throw const AuthException('Địa chỉ Email không hợp lệ!');
-      }
-
-      final accountsStr = await secureStorage.read(key: _keyRegisteredAccounts);
-      final Map<String, dynamic> accounts = accountsStr != null
-          ? jsonDecode(accountsStr) as Map<String, dynamic>
-          : {};
-
-      if (accounts.containsKey(normalizedEmail)) {
-        final acc = accounts[normalizedEmail] as Map<String, dynamic>;
-        acc['password'] = newPassword;
-        await secureStorage.write(
-          key: _keyRegisteredAccounts,
-          value: jsonEncode(accounts),
-        );
-      } else if (normalizedEmail == 'reader@naomi.app') {
-        final defaultUser = UserModel(
-          id: 'user_default_reader',
-          email: 'reader@naomi.app',
-          displayName: 'Độc giả Naomi',
-          isGuest: false,
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        );
-        accounts[normalizedEmail] = {
-          'password': newPassword,
-          'profile': defaultUser.toJson(),
-        };
-        await secureStorage.write(
-          key: _keyRegisteredAccounts,
-          value: jsonEncode(accounts),
-        );
-      } else {
-        throw const AuthException('Không tìm thấy tài khoản gắn với Email này!');
-      }
-    } on AuthException {
-      rethrow;
-    } catch (e) {
-      throw AuthException('Lỗi đặt lại mật khẩu: $e');
-    }
+    return updated;
   }
 }

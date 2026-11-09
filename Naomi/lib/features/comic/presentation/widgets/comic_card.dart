@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../domain/entities/comic.dart';
 
 class ComicCard extends StatelessWidget {
@@ -24,10 +25,10 @@ class ComicCard extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.darkBorder, width: 1),
+                border: Border.all(color: context.borderColor, width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
+                    color: Colors.black.withValues(alpha: context.isDarkMode ? 0.3 : 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -41,7 +42,7 @@ class ComicCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (context, url) => Container(
-                          color: AppColors.darkSurface,
+                          color: context.surfaceColor,
                           child: const Center(
                             child: SizedBox(
                               width: 24,
@@ -54,18 +55,18 @@ class ComicCard extends StatelessWidget {
                           ),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: AppColors.darkSurface,
-                          child: const Icon(
+                          color: context.surfaceColor,
+                          child: Icon(
                             Icons.broken_image_rounded,
-                            color: AppColors.darkTextMuted,
+                            color: context.textMuted,
                           ),
                         ),
                       )
                     : Container(
-                        color: AppColors.darkSurface,
-                        child: const Icon(
+                        color: context.surfaceColor,
+                        child: Icon(
                           Icons.image_not_supported_rounded,
-                          color: AppColors.darkTextMuted,
+                          color: context.textMuted,
                         ),
                       ),
               ),
@@ -76,10 +77,10 @@ class ComicCard extends StatelessWidget {
             comic.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppColors.darkTextPrimary,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -87,9 +88,9 @@ class ComicCard extends StatelessWidget {
             comic.genres.isNotEmpty ? comic.genres.take(2).join(', ') : comic.author,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: AppColors.darkTextSecondary,
+              color: context.textSecondary,
             ),
           ),
         ],

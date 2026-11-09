@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_context_extension.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../library/domain/entities/reading_history_item.dart';
 import '../../../library/domain/repositories/library_repository.dart';
@@ -48,13 +49,11 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
   ReadingHistoryItem? _lastReadHistory;
 
   bool _isDescriptionExpanded = false;
-  late String _selectedLanguage; // 'all', 'vi', 'en'
   bool _isAscending = true; // true = 1 -> N, false = N -> 1
 
   @override
   void initState() {
     super.initState();
-    _selectedLanguage = sl<ThemeController>().preferredLanguage;
     _checkInitialStatus();
   }
 
@@ -99,7 +98,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
       (failure) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: ${failure.message}'), backgroundColor: AppColors.error),
+            SnackBar(content: Text('Error: ${failure.message}'), backgroundColor: AppColors.error),
           );
         }
       },
@@ -108,8 +107,8 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
           setState(() => _isBookmarked = isFav);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(isFav ? 'Đã thêm vào Tủ sách yêu thích!' : 'Đã xóa khỏi Tủ sách yêu thích.'),
-              backgroundColor: isFav ? AppColors.primary : AppColors.darkSurface,
+              content: Text(isFav ? 'Added to Favorites!' : 'Removed from Favorites.'),
+              backgroundColor: isFav ? AppColors.primary : context.surfaceColor,
               duration: const Duration(seconds: 2),
             ),
           );
@@ -119,20 +118,15 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
   }
 
   Future<void> _downloadChapter(Comic comic, Chapter chapter) async {
-    if (_downloadingChapterIds.contains(chapter.id) || _downloadedChapterIds.contains(chapter.id)) return;
+    if (_downloadedChapterIds.contains(chapter.id) || _downloadingChapterIds.contains(chapter.id)) {
+      return;
+    }
 
     setState(() {
       _downloadingChapterIds.add(chapter.id);
       _downloadProgress[chapter.id] = 0.0;
-      _downloadDetailText[chapter.id] = 'Đang khởi tạo...';
+      _downloadDetailText[chapter.id] = 'Connecting...';
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đang tải Chương ${chapter.chapterNumber} để đọc ngoại tuyến (FR-06)...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
 
     final result = await sl<DownloadChapter>()(
       DownloadChapterParams(
@@ -143,80 +137,72 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
         chapterId: chapter.id,
         chapterNumber: chapter.chapterNumber,
         chapterTitle: chapter.title,
-        onProgress: (downloaded, total) {
-          if (mounted && total > 0) {
+        onProgress: (received, total) {
+          if (mounted) {
             setState(() {
-              _downloadProgress[chapter.id] = downloaded / total;
-              _downloadDetailText[chapter.id] = '$downloaded/$total trang (${((downloaded / total) * 100).toInt()}%)';
+              final progress = total > 0 ? (received / total) : 0.0;
+              _downloadProgress[chapter.id] = progress;
+              _downloadDetailText[chapter.id] = '$received/$total pages (${(progress * 100).toInt()}%)';
             });
           }
         },
       ),
     );
 
-    if (mounted) {
-      setState(() {
-        _downloadingChapterIds.remove(chapter.id);
-        _downloadProgress.remove(chapter.id);
-        _downloadDetailText.remove(chapter.id);
-      });
-      result.fold(
-        (failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Tải thất bại: ${failure.message}'), backgroundColor: AppColors.error),
-          );
-        },
-        (_) {
-          setState(() => _downloadedChapterIds.add(chapter.id));
+    result.fold(
+      (failure) {
+        if (mounted) {
+          setState(() {
+            _downloadingChapterIds.remove(chapter.id);
+            _downloadProgress.remove(chapter.id);
+            _downloadDetailText.remove(chapter.id);
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Đã tải xong Chương ${chapter.chapterNumber}! Có thể đọc 100% Offline trong Tủ sách.'),
-              backgroundColor: AppColors.success,
-              duration: const Duration(seconds: 3),
+              content: Text('Error downloading Chapter ${chapter.chapterNumber}: ${failure.message}'),
+              backgroundColor: AppColors.error,
             ),
           );
-        },
-      );
-    }
+        }
+      },
+      (_) {
+        if (mounted) {
+          setState(() {
+            _downloadingChapterIds.remove(chapter.id);
+            _downloadProgress.remove(chapter.id);
+            _downloadDetailText.remove(chapter.id);
+            _downloadedChapterIds.add(chapter.id);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Chapter ${chapter.chapterNumber} downloaded for offline reading!'),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
   }
 
-  List<Chapter> _processChapters(List<Chapter> rawChapters) {
-    // 1. Lọc theo ngôn ngữ
-    List<Chapter> filtered = rawChapters;
-    if (_selectedLanguage != 'all') {
-      filtered = rawChapters.where((c) => c.translatedLanguage.toLowerCase() == _selectedLanguage).toList();
-    }
+  List<Chapter> _processChapters(List<Chapter> originalChapters) {
+    // Only accept English ('en') chapters
+    List<Chapter> filtered = originalChapters.where((c) => c.translatedLanguage == 'en').toList();
 
-    // 2. Khử trùng lặp thông minh theo số chương (Ưu tiên giữ bản Tiếng Việt 'vi' trước, sau đó đến 'en')
-    final Map<String, Chapter> uniqueByNumber = {};
-    for (final ch in filtered) {
-      final key = ch.chapterNumber.trim();
-      if (!uniqueByNumber.containsKey(key)) {
-        uniqueByNumber[key] = ch;
-      } else {
-        final existing = uniqueByNumber[key]!;
-        if (existing.translatedLanguage.toLowerCase() != 'vi' &&
-            ch.translatedLanguage.toLowerCase() == 'vi') {
-          uniqueByNumber[key] = ch;
-        }
-      }
-    }
-
-    // 3. Sắp xếp tăng dần hoặc giảm dần
-    final sorted = uniqueByNumber.values.toList();
-    sorted.sort((a, b) {
+    filtered.sort((a, b) {
       final numA = double.tryParse(a.chapterNumber) ?? 0.0;
       final numB = double.tryParse(b.chapterNumber) ?? 0.0;
       return _isAscending ? numA.compareTo(numB) : numB.compareTo(numA);
     });
 
-    return sorted;
+    return filtered;
   }
 
   void _openReader(Comic comic, List<Chapter> chapters, int initialIndex) {
-    if (chapters.isEmpty || initialIndex < 0 || initialIndex >= chapters.length) return;
+    if (chapters.isEmpty) return;
+    final clampedIndex = initialIndex.clamp(0, chapters.length - 1);
+    final targetChapter = chapters[clampedIndex];
 
-    final targetChapter = chapters[initialIndex];
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -229,18 +215,16 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
           coverUrl: comic.coverUrl,
           comicGenres: comic.genres,
           chaptersList: chapters,
-          currentChapterIndex: initialIndex,
+          currentChapterIndex: clampedIndex,
         ),
       ),
-    ).then((_) {
-      _checkInitialStatus();
-    });
+    ).then((_) => _checkInitialStatus());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: context.backgroundColor,
       body: BlocBuilder<ComicDetailBloc, ComicDetailState>(
         builder: (context, state) {
           if (state is ComicDetailLoading) {
@@ -272,7 +256,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                     SliverAppBar(
                       expandedHeight: 340,
                       pinned: true,
-                      backgroundColor: AppColors.darkBackground,
+                      backgroundColor: context.backgroundColor,
                       leading: IconButton(
                         icon: const CircleAvatar(
                           backgroundColor: Colors.black54,
@@ -282,7 +266,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                       ),
                       actions: [
                         IconButton(
-                          tooltip: _isBookmarked ? 'Bỏ thích' : 'Yêu thích (Tủ sách)',
+                          tooltip: _isBookmarked ? 'Remove from Favorites' : 'Add to Favorites',
                           icon: CircleAvatar(
                             backgroundColor: Colors.black54,
                             child: Icon(
@@ -311,8 +295,8 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    AppColors.darkBackground.withValues(alpha: 0.8),
-                                    AppColors.darkBackground,
+                                    context.backgroundColor.withValues(alpha: 0.8),
+                                    context.backgroundColor,
                                   ],
                                   stops: const [0.3, 0.7, 1.0],
                                 ),
@@ -337,8 +321,8 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                         : Container(
                                             width: 105,
                                             height: 145,
-                                            color: AppColors.darkSurface,
-                                            child: const Icon(Icons.book_rounded, color: AppColors.darkTextMuted),
+                                            color: context.surfaceColor,
+                                            child: Icon(Icons.book_rounded, color: context.textMuted),
                                           ),
                                   ),
                                   const SizedBox(width: 16),
@@ -351,20 +335,20 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                           comic.title,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w800,
-                                            color: AppColors.darkTextPrimary,
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
-                                          'Tác giả: ${comic.author}',
+                                          'Author: ${comic.author}',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: AppColors.darkTextSecondary,
+                                            color: context.textSecondary,
                                           ),
                                         ),
                                         const SizedBox(height: 6),
@@ -409,13 +393,13 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                   Expanded(
                                     child: OutlinedButton.icon(
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppColors.darkTextPrimary,
-                                        side: const BorderSide(color: AppColors.darkBorder),
+                                        foregroundColor: context.textPrimary,
+                                        side: BorderSide(color: context.borderColor),
                                         padding: const EdgeInsets.symmetric(vertical: 10),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                       icon: const Icon(Icons.first_page_rounded, size: 18, color: AppColors.primaryLight),
-                                      label: const Text('Đọc từ đầu', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                      label: const Text('Read First', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                                       onPressed: () => _openReader(comic, processedChapters, firstChapterIndex),
                                     ),
                                   ),
@@ -423,35 +407,35 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                   Expanded(
                                     child: OutlinedButton.icon(
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppColors.darkTextPrimary,
-                                        side: const BorderSide(color: AppColors.darkBorder),
+                                        foregroundColor: context.textPrimary,
+                                        side: BorderSide(color: context.borderColor),
                                         padding: const EdgeInsets.symmetric(vertical: 10),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                       icon: const Icon(Icons.new_releases_outlined, size: 16, color: AppColors.primaryLight),
-                                      label: const Text('Chương mới nhất', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                      label: const Text('Latest Chapter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                                       onPressed: () => _openReader(comic, processedChapters, latestChapterIndex),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton.outlined(
-                                    tooltip: _isBookmarked ? 'Bỏ Yêu thích' : 'Lưu Yêu thích (FR-07)',
+                                    tooltip: _isBookmarked ? 'Unfavorite' : 'Save to Favorites',
                                     style: IconButton.styleFrom(
-                                      side: BorderSide(color: _isBookmarked ? AppColors.error : AppColors.darkBorder),
+                                      side: BorderSide(color: _isBookmarked ? AppColors.error : context.borderColor),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     ),
                                     icon: Icon(
                                       _isBookmarked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                      color: _isBookmarked ? AppColors.error : AppColors.darkTextSecondary,
+                                      color: _isBookmarked ? AppColors.error : context.textSecondary,
                                       size: 20,
                                     ),
                                     onPressed: () => _toggleBookmark(comic),
                                   ),
                                   const SizedBox(width: 6),
                                   IconButton.outlined(
-                                    tooltip: 'Tải nhanh chương đầu ngoại tuyến (FR-06)',
+                                    tooltip: 'Quick download chapter for offline reading',
                                     style: IconButton.styleFrom(
-                                      side: const BorderSide(color: AppColors.darkBorder),
+                                      side: BorderSide(color: context.borderColor),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     ),
                                     icon: const Icon(Icons.download_for_offline_outlined, color: AppColors.primaryLight, size: 20),
@@ -471,13 +455,13 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: AppColors.darkSurface,
+                                      color: context.surfaceColor,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: AppColors.darkBorder),
+                                      border: Border.all(color: context.borderColor),
                                     ),
                                     child: Text(
                                       genre,
-                                      style: const TextStyle(fontSize: 11, color: AppColors.darkTextSecondary),
+                                      style: TextStyle(fontSize: 11, color: context.textSecondary),
                                     ),
                                   );
                                 }).toList(),
@@ -487,7 +471,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
 
                             // Mô tả nội dung có nút Xem thêm / Thu gọn
                             const Text(
-                              'TÓM TẮT NỘI DUNG',
+                              'SYNOPSIS',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -497,13 +481,13 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              comic.description.isNotEmpty ? comic.description : 'Chưa có mô tả cho tác phẩm này.',
+                              comic.description.isNotEmpty ? comic.description : 'No description available for this title.',
                               maxLines: _isDescriptionExpanded ? null : 3,
                               overflow: _isDescriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 height: 1.5,
-                                color: AppColors.darkTextSecondary,
+                                color: context.textSecondary,
                               ),
                             ),
                             if (comic.description.length > 120)
@@ -512,7 +496,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                 child: TextButton(
                                   onPressed: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
                                   child: Text(
-                                    _isDescriptionExpanded ? 'Thu gọn ▲' : 'Xem thêm ▼',
+                                    _isDescriptionExpanded ? 'Show less ▲' : 'Read more ▼',
                                     style: const TextStyle(color: AppColors.primaryLight, fontSize: 12),
                                   ),
                                 ),
@@ -527,7 +511,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                 Row(
                                   children: [
                                     const Text(
-                                      'DANH SÁCH CHƯƠNG',
+                                      'CHAPTER LIST',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
@@ -537,13 +521,13 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '(${processedChapters.length} chương)',
-                                      style: const TextStyle(fontSize: 12, color: AppColors.darkTextMuted),
+                                      '(${processedChapters.length} chapters)',
+                                      style: TextStyle(fontSize: 12, color: context.textMuted),
                                     ),
                                   ],
                                 ),
                                 IconButton(
-                                  tooltip: _isAscending ? 'Sắp xếp: 1 -> N (Nhỏ đến lớn)' : 'Sắp xếp: N -> 1 (Mới nhất trước)',
+                                  tooltip: _isAscending ? 'Sort: 1 -> N (Ascending)' : 'Sort: N -> 1 (Newest first)',
                                   icon: Icon(
                                     _isAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                                     color: AppColors.primaryLight,
@@ -555,45 +539,22 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                             ),
                             const SizedBox(height: 6),
 
-                            // Bộ lọc ngôn ngữ chương (Tất cả / Tiếng Việt / English)
+                            // Chỉ hiển thị ngôn ngữ English (EN)
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
                                 children: [
                                   ChoiceChip(
-                                    label: const Text('Tất cả (Ưu tiên VI)'),
-                                    selected: _selectedLanguage == 'all',
-                                    selectedColor: AppColors.primary,
-                                    backgroundColor: AppColors.darkSurface,
-                                    labelStyle: TextStyle(
-                                      fontSize: 11,
-                                      color: _selectedLanguage == 'all' ? Colors.white : AppColors.darkTextSecondary,
-                                    ),
-                                    onSelected: (_) => setState(() => _selectedLanguage = 'all'),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ChoiceChip(
-                                    label: const Text('Tiếng Việt (VI)'),
-                                    selected: _selectedLanguage == 'vi',
-                                    selectedColor: AppColors.primary,
-                                    backgroundColor: AppColors.darkSurface,
-                                    labelStyle: TextStyle(
-                                      fontSize: 11,
-                                      color: _selectedLanguage == 'vi' ? Colors.white : AppColors.darkTextSecondary,
-                                    ),
-                                    onSelected: (_) => setState(() => _selectedLanguage = 'vi'),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ChoiceChip(
                                     label: const Text('English (EN)'),
-                                    selected: _selectedLanguage == 'en',
+                                    selected: true,
                                     selectedColor: AppColors.primary,
-                                    backgroundColor: AppColors.darkSurface,
-                                    labelStyle: TextStyle(
+                                    backgroundColor: context.surfaceColor,
+                                    side: const BorderSide(color: AppColors.primary),
+                                    labelStyle: const TextStyle(
                                       fontSize: 11,
-                                      color: _selectedLanguage == 'en' ? Colors.white : AppColors.darkTextSecondary,
+                                      color: Colors.white,
                                     ),
-                                    onSelected: (_) => setState(() => _selectedLanguage = 'en'),
+                                    onSelected: (_) {},
                                   ),
                                 ],
                               ),
@@ -606,13 +567,13 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
 
                     // 3. Danh sách các chương (Chapters List) kèm thanh tiến độ tải S11
                     if (processedChapters.isEmpty)
-                      const SliverToBoxAdapter(
+                      SliverToBoxAdapter(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 36),
+                          padding: const EdgeInsets.symmetric(vertical: 36),
                           child: Center(
                             child: Text(
-                              'Không tìm thấy chương nào với bộ lọc ngôn ngữ này.',
-                              style: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
+                              'No English chapters available for this comic.',
+                              style: TextStyle(color: context.textMuted, fontSize: 13),
                             ),
                           ),
                         ),
@@ -632,11 +593,11 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                             return Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                               child: Material(
-                                color: isLastRead ? AppColors.primary.withValues(alpha: 0.12) : AppColors.darkSurface,
+                                color: isLastRead ? AppColors.primary.withValues(alpha: 0.12) : context.surfaceColor,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   side: BorderSide(
-                                    color: isLastRead ? AppColors.primaryLight : AppColors.darkBorder,
+                                    color: isLastRead ? AppColors.primaryLight : context.borderColor,
                                     width: isLastRead ? 1.5 : 1.0,
                                   ),
                                 ),
@@ -646,11 +607,11 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Chương ${chapter.chapterNumber}${chapter.title.isNotEmpty ? ': ${chapter.title}' : ''}',
+                                          'Chapter ${chapter.chapterNumber}${chapter.title.isNotEmpty ? ': ${chapter.title}' : ''}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: isLastRead ? FontWeight.w700 : FontWeight.w600,
-                                            color: isLastRead ? AppColors.primaryLight : AppColors.darkTextPrimary,
+                                            color: isLastRead ? AppColors.primaryLight : context.textPrimary,
                                           ),
                                         ),
                                       ),
@@ -662,7 +623,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: const Text(
-                                            'Đang đọc',
+                                            'Reading',
                                             style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                           ),
                                         ),
@@ -675,7 +636,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'Đang tải: $progressText',
+                                                'Downloading: $progressText',
                                                 style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600),
                                               ),
                                               const SizedBox(height: 4),
@@ -683,7 +644,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                                 borderRadius: BorderRadius.circular(3),
                                                 child: LinearProgressIndicator(
                                                   value: progress > 0 ? progress : null,
-                                                  backgroundColor: AppColors.darkBorder,
+                                                  backgroundColor: context.borderColor,
                                                   color: AppColors.success,
                                                   minHeight: 4,
                                                 ),
@@ -692,8 +653,8 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                           ),
                                         )
                                       : Text(
-                                          'Nhóm dịch: ${chapter.scanlationGroup} • [${chapter.translatedLanguage.toUpperCase()}]',
-                                          style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted),
+                                          'Group: ${chapter.scanlationGroup} • [${chapter.translatedLanguage.toUpperCase()}]',
+                                          style: TextStyle(fontSize: 11, color: context.textMuted),
                                         ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -728,14 +689,14 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                                         )
                                       else
                                         IconButton(
-                                          tooltip: 'Tải đọc ngoại tuyến (FR-06)',
-                                          icon: const Icon(Icons.download_rounded, color: AppColors.darkTextSecondary, size: 20),
+                                          tooltip: 'Download for offline reading',
+                                          icon: Icon(Icons.download_rounded, color: context.textSecondary, size: 20),
                                           onPressed: () => _downloadChapter(comic, chapter),
                                         ),
 
                                       // Nút Đọc ngay
                                       IconButton(
-                                        tooltip: 'Đọc chương này',
+                                        tooltip: 'Read this chapter',
                                         icon: const Icon(
                                           Icons.play_circle_outline_rounded,
                                           color: AppColors.primary,
@@ -769,7 +730,7 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.5 : 0.15),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -786,8 +747,8 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                         icon: const Icon(Icons.menu_book_rounded, size: 22),
                         label: Text(
                           _lastReadHistory != null
-                              ? 'ĐỌC TIẾP CHƯƠNG ${_lastReadHistory!.chapterNumber} (Trang ${_lastReadHistory!.lastPageRead}/${_lastReadHistory!.totalPages})'
-                              : 'BẮT ĐẦU ĐỌC NGAY (Chương ${processedChapters[resumeIndex].chapterNumber})',
+                              ? 'RESUME CHAPTER ${_lastReadHistory!.chapterNumber} (Page ${_lastReadHistory!.lastPageRead}/${_lastReadHistory!.totalPages})'
+                              : 'START READING NOW (Chapter ${processedChapters[resumeIndex].chapterNumber})',
                           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.8),
                         ),
                         onPressed: () => _openReader(comic, processedChapters, resumeIndex),
@@ -806,29 +767,29 @@ class _ComicDetailViewState extends State<_ComicDetailView> {
                   children: [
                     const Icon(Icons.cloud_off_rounded, size: 60, color: AppColors.warning),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Oops! Không thể tải thông tin truyện',
-                      style: TextStyle(color: AppColors.darkTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    Text(
+                      'Oops! Unable to load comic details',
+                      style: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.darkTextSecondary)),
+                    Text(state.message, textAlign: TextAlign.center, style: TextStyle(color: context.textSecondary)),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.darkTextPrimary,
-                            side: const BorderSide(color: AppColors.darkBorder),
+                            foregroundColor: context.textPrimary,
+                            side: BorderSide(color: context.borderColor),
                           ),
                           onPressed: () => context.read<ComicDetailBloc>().add(LoadComicDetailEvent(widget.comicId)),
-                          child: const Text('Thử lại'),
+                          child: const Text('Retry'),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                           icon: const Icon(Icons.offline_pin_rounded, color: Colors.white, size: 18),
-                          label: const Text('Mở Kho Ngoại Tuyến', style: TextStyle(color: Colors.white)),
+                          label: const Text('Open Offline Library', style: TextStyle(color: Colors.white)),
                           onPressed: () {
                             Navigator.pop(context);
                             sl<ThemeController>().navigateToOfflineLibrary();

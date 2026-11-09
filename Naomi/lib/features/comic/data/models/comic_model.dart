@@ -19,16 +19,16 @@ class ComicModel extends Comic {
     final String id = json['id'] ?? '';
     final attributes = json['attributes'] as Map<String, dynamic>? ?? {};
 
-    // 1. Phân giải Tiêu đề (Ưu tiên vi -> en -> tiêu đề đầu tiên)
+    // 1. Phân giải Tiêu đề (Chỉ nhận Tiếng Anh 'en' -> tiêu đề đầu tiên)
     final titleMap = attributes['title'] as Map<String, dynamic>? ?? {};
-    String title = titleMap['vi'] ?? titleMap['en'] ?? '';
+    String title = titleMap['en'] ?? '';
     if (title.isEmpty && titleMap.isNotEmpty) {
       title = titleMap.values.first.toString();
     }
 
-    // 2. Phân giải Mô tả
+    // 2. Phân giải Mô tả (Chỉ nhận Tiếng Anh 'en' -> mô tả đầu tiên)
     final descMap = attributes['description'] as Map<String, dynamic>? ?? {};
-    String description = descMap['vi'] ?? descMap['en'] ?? '';
+    String description = descMap['en'] ?? '';
     if (description.isEmpty && descMap.isNotEmpty) {
       description = descMap.values.first.toString();
     }
