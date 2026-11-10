@@ -1,0 +1,72 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Naomi Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Get Dependencies
+        working-directory: Naomi
+        run: flutter pub get
+
+      - name: Build Android Release APK
+        working-directory: Naomi
+        run: flutter build apk --release
+
+      - name: Upload APK to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Naomi-Release-APK
+          path: Naomi/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: v1.0.0-apk
+          name: "Naomi Manga Reader v1.0.0 (Release APK)"
+          body: |
+            ## 📱 Naomi Manga Reader - Android APK
+            
+            Bản cài đặt chính thức của ứng dụng đọc truyện Naomi dành cho hệ điều hành Android.
+            
+            ### Tính năng nổi bật:
+            - 📖 Đọc truyện tranh mượt mà (nguồn MangaDex)
+            - 🎵 Trình phát nhạc nền thư giãn
+            - ☁️ Hệ thống tài khoản Supabase Cloud (đồng bộ đa thiết bị)
+            - 🎨 Giao diện tối ưu chuẩn Material 3
+            
+            ### Hướng dẫn cài đặt:
+            1. Tải file `app-release.apk` bên dưới trực tiếp vào điện thoại Android.
+            2. Mở file APK vừa tải và chọn **Cài đặt**.
+            3. Nếu điện thoại hiển thị cảnh báo bảo mật *"Cài đặt ứng dụng không rõ nguồn gốc"*, hãy chọn **Cho phép** (hoặc gạt công tắc Cho phép từ nguồn này).
+            4. Hoàn tất cài đặt và trải nghiệm Naomi!
+          files: Naomi/build/app/outputs/flutter-apk/app-release.apk
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

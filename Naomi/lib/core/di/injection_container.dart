@@ -3,6 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../audio/ambient_audio_service.dart';
+import '../audio/spotify/spotify_api_client.dart';
+import '../audio/spotify/spotify_auth_service.dart';
 import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
 import '../network/dio_client.dart';
@@ -74,7 +76,9 @@ Future<void> init() async {
   sl.registerLazySingleton<DioClient>(() => DioClient());
   sl.registerLazySingleton<DatabaseHelper>(() => DatabaseHelper.instance);
   sl.registerLazySingleton<Connectivity>(() => Connectivity());
-  sl.registerLazySingleton<AmbientAudioService>(() => AmbientAudioService());
+  sl.registerLazySingleton<SpotifyAuthService>(() => SpotifyAuthService(secureStorage: sl(), dio: sl<DioClient>().dio));
+  sl.registerLazySingleton<SpotifyApiClient>(() => SpotifyApiClient(authService: sl(), dio: sl<DioClient>().dio));
+  sl.registerLazySingleton<AmbientAudioService>(() => AmbientAudioService(spotifyClient: sl(), spotifyAuthService: sl()));
 
   //! 2. Feature: Authentication Module (FR-00, NFR-05, NFR-10, Supabase Cloud Auth)
   sl.registerLazySingleton<AuthRemoteDataSource>(
@@ -197,4 +201,5 @@ Future<void> init() async {
 
   // Nạp cấu hình theme và tùy chọn người dùng đã lưu
   await sl<ThemeController>().loadPreferences();
+  await sl<SpotifyAuthService>().init();
 }

@@ -33,7 +33,8 @@ command to ai*
 **/android/.gradle/
 **/android/app/build/
 **/android/captures/
-**/android/gradle/
+!**/android/gradle/wrapper/gradle-wrapper.jar
+!**/android/gradle/wrapper/gradle-wrapper.properties
 **/android/local.properties
 **/android/GeneratedPluginRegistrant.java
 
